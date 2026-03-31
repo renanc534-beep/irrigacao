@@ -517,11 +517,6 @@ function reconnect(){
 function publish(obj){
   if(!client||!client.connected){toast('Sem conexão!');return;}
   client.publish('irrigation/command',JSON.stringify(obj));
-  if(obj.cmd !== 'get_status'){
-    setTimeout(function(){
-      if(client&&client.connected) client.publish('irrigation/command','{"cmd":"get_status"}');
-    }, 1500);
-  }
 }
 
 function stopAll(){
