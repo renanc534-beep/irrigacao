@@ -1,1 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Irrigação — Morango</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-light: #E1F5EE;
+    --green-dark: #0F6E56;
+    --red: #E24B4A;
+    --red-light: #FCEBEB;
+    --amber: #EF9F27;
+    --amber-light: #FAEEDA;
+    --blue: #378ADD;
+    --blue-light: #E6F1FB;
+    --bg: #F7F7F5;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.08);
+    --text: #1A1A18;
+    --muted: #6B6B68;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    min-height: 100vh;
+    padding-bottom: 2rem;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.2px;
+  }
+  .badge-ok { background: var(--green-light); color: var(--green-dark); }
+  .badge-err { background: var(--red-light); color: var(--red); }
+  .badge-warn { background: var(--amber-light); color: #854F0B; }
+  .badge-info { background: var(--blue-light); color: #185FA5; }
+  .badge-muted { background: #F1EFE8; color: var(--muted); }
 
+  .container { max-width: 520px; margin: 0 auto; padding: 1rem; }
+
+  .stop-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    letter-spacing: 0.2px;
+    transition: opacity .15s;
+  }
+  .stop-btn:hover { opacity: .88; }
+  .stop-btn:active { opacity: .75; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 1rem;
+  }
+  .tab {
+    flex: 1;
+    padding: 8px 4px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .tab.active {
+    background: var(--green);
+    color: white;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: .75rem;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: .75rem;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: .75rem;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .875rem 1rem;
+  }
+  .metric-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .metric-val {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: -0.5px;
+  }
+
+  .sector-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: .625rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sector-row:last-child { border-bottom: none; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-active { background: var(--green); box-shadow: 0 0 0 3px var(--green-light); }
+  .dot-idle { background: #D3D1C7; }
+  .sector-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .sector-dur { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .manual-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: .625rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .manual-row:last-child { border-bottom: none; }
+  .manual-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .btn-on {
+    padding: 6px 16px;
+    border: 1.5px solid var(--green);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--green-dark);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-on:hover { background: var(--green-light); }
+  .btn-off {
+    padding: 6px 16px;
+    border: 1.5px solid var(--red);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--red);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-off:hover { background: var(--red-light); }
+
+  .cfg-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .cfg-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    margin-bottom: .75rem;
+    outline: none;
+  }
+  .cfg-input:focus { border-color: var(--green); }
+  .cfg-row { display: flex; gap: 8px; margin-bottom: .75rem; }
+  .cfg-row .cfg-input { margin-bottom: 0; }
+  .cfg-half { flex: 1; }
+  select.cfg-input { cursor: pointer; }
+
+  .sched-wrap { margin-bottom: .75rem; }
+  .sched-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 24px; }
+  .sched-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-light); color: #185FA5;
+    font-size: 12px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+  .sched-tag-x { cursor: pointer; font-size: 14px; line-height: 1; }
+  .sched-add { display: flex; gap: 8px; }
+  .sched-input {
+    flex: 1; padding: 8px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 14px; outline: none;
+  }
+  .sched-input:focus { border-color: var(--green); }
+  .btn-add {
+    padding: 8px 16px;
+    border: 1.5px solid var(--green);
+    border-radius: var(--radius-sm);
+    background: transparent; color: var(--green-dark);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--green-light); }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .5rem 0; margin-bottom: .75rem;
+  }
+  .toggle-label { font-size: 14px; font-weight: 500; }
+  .toggle {
+    width: 44px; height: 24px; border-radius: 12px;
+    background: #D3D1C7; border: none; cursor: pointer;
+    position: relative; transition: background .2s;
+  }
+  .toggle.on { background: var(--green); }
+  .toggle::after {
+    content: ''; position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; top: 3px; left: 3px;
+    transition: transform .2s;
+  }
+  .toggle.on::after { transform: translateX(20px); }
+
+  .save-btn {
+    width: 100%; padding: 12px;
+    background: var(--green); color: white; border: none;
+    border-radius: var(--radius); font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .save-btn:hover { opacity: .88; }
+
+  .conn-btn {
+    width: 100%; padding: 12px;
+    background: var(--text); color: white; border: none;
+    border-radius: var(--radius); font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .conn-btn:hover { opacity: .85; }
+
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: white;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    opacity: 0; transition: opacity .3s; pointer-events: none;
+    z-index: 100; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  .datetime-bar {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">🌱 Irrigação</div>
+    <div class="header-sub">Morango semi-hidropônico</div>
+  </div>
+  <span id="conn-badge" class="badge badge-err">Desconectado</span>
+</div>
+
+<div class="container">
+
+  <button class="stop-btn" onclick="stopAll()">⛔ Parada de emergência</button>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('status',this)">Status</button>
+    <button class="tab" onclick="showTab('manual',this)">Manual</button>
+    <button class="tab" onclick="showTab('config',this)">Configurar</button>
+    <button class="tab" onclick="showTab('conn',this)">Conexão</button>
+  </div>
+
+  <!-- STATUS -->
+  <div id="tab-status">
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Setor ativo</div>
+        <div class="metric-val" id="m-sector">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Restante</div>
+        <div class="metric-val" id="m-time">—</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fila de irrigação</div>
+      <div id="queue-display" style="font-size:13px;color:var(--muted)">Nenhum setor na fila</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Setores</div>
+      <div id="sectors-status"></div>
+    </div>
+    <div class="card" style="padding:.875rem 1.25rem">
+      <div class="datetime-bar">
+        <span id="m-date">—</span>
+        <span style="color:var(--border)">|</span>
+        <span id="m-time2">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL -->
+  <div id="tab-manual" style="display:none">
+    <div class="card">
+      <div class="card-title">Controle manual</div>
+      <div id="manual-sectors"></div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="tab-config" style="display:none">
+    <div class="card">
+      <label class="cfg-label">Setor</label>
+      <select class="cfg-input" id="cfg-sector" onchange="loadSector()">
+        <option value="1">Setor 1</option>
+        <option value="2">Setor 2</option>
+        <option value="3">Setor 3</option>
+        <option value="4">Setor 4</option>
+        <option value="5">Setor 5</option>
+        <option value="6">Setor 6</option>
+      </select>
+
+      <label class="cfg-label">Nome</label>
+      <input class="cfg-input" type="text" id="cfg-name" placeholder="Ex: Canteiro A">
+
+      <label class="cfg-label">Duração</label>
+      <div class="cfg-row">
+        <div class="cfg-half">
+          <input class="cfg-input" type="number" id="cfg-min" min="0" max="60" value="5" placeholder="0">
+          <div style="font-size:11px;color:var(--muted);margin-top:-8px;padding-left:4px">minutos</div>
+        </div>
+        <div class="cfg-half">
+          <input class="cfg-input" type="number" id="cfg-sec" min="0" max="59" value="0" placeholder="0">
+          <div style="font-size:11px;color:var(--muted);margin-top:-8px;padding-left:4px">segundos</div>
+        </div>
+      </div>
+
+      <label class="cfg-label">Horários (máx. 12)</label>
+      <div class="sched-wrap">
+        <div class="sched-tags" id="sched-tags"></div>
+        <div class="sched-add">
+          <input class="sched-input" type="text" id="new-sched" placeholder="HH:MM">
+          <button class="btn-add" onclick="addSchedule()">+ Adicionar</button>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Setor ativo</span>
+        <button class="toggle on" id="cfg-toggle" onclick="toggleEnabled()"></button>
+      </div>
+
+      <button class="save-btn" onclick="saveSector()">Salvar configurações</button>
+    </div>
+  </div>
+
+  <!-- CONEXÃO -->
+  <div id="tab-conn" style="display:none">
+    <div class="card">
+      <label class="cfg-label">Broker MQTT</label>
+      <input class="cfg-input" id="inp-broker" value="broker.hivemq.com">
+      <label class="cfg-label">Porta WebSocket</label>
+      <input class="cfg-input" id="inp-port" value="8884" type="number">
+      <label class="cfg-label">Usuário (opcional)</label>
+      <input class="cfg-input" id="inp-user" placeholder="deixe em branco se não usar">
+      <label class="cfg-label">Senha (opcional)</label>
+      <input class="cfg-input" id="inp-pass" type="password" placeholder="deixe em branco se não usar">
+      <button class="conn-btn" onclick="reconnect()">Conectar</button>
+    </div>
+    <div class="card" style="font-size:13px;color:var(--muted);line-height:1.7">
+      <div class="card-title">Como usar</div>
+      Abra este arquivo no navegador do celular.<br>
+      Broker padrão: <strong>broker.hivemq.com</strong><br>
+      Tópico de comando: <strong>irrigation/command</strong><br>
+      Tópico de status: <strong>irrigation/status</strong>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+<script>
+var client = null;
+var state = {sectors:[],current_sector:null,queue:[],remaining_sec:0,irrigating:false,time:'',date:''};
+var cfgSchedules = {};
+var cfgEnabled = {};
+for(var i=1;i<=6;i++){cfgSchedules[i]=[];cfgEnabled[i]=true;}
+
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show')},2000);
+}
+
+function showTab(name,el){
+  ['status','manual','config','conn'].forEach(function(t){
+    document.getElementById('tab-'+t).style.display=t===name?'':'none';
+  });
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
+  if(el) el.classList.add('active');
+  if(name==='config') loadSector();
+}
+
+function connect(broker,port,user,pass){
+  if(client){try{client.end(true);}catch(e){}}
+  var opts={clientId:'app_irrig_'+Math.random().toString(16).slice(2),clean:true};
+  if(user) opts.username=user;
+  if(pass) opts.password=pass;
+  var url='wss://'+broker+':'+port+'/mqtt';
+  setBadge('Conectando...','warn');
+  client=mqtt.connect(url,opts);
+  client.on('connect',function(){
+    setBadge('Conectado','ok');
+    client.subscribe('irrigation/status');
+    publish({cmd:'get_status'});
+  });
+  client.on('error',function(){setBadge('Erro','err');});
+  client.on('close',function(){setBadge('Desconectado','err');});
+  client.on('message',function(topic,msg){
+    try{
+      var d=JSON.parse(msg.toString());
+      state=d;
+      if(d.sectors) d.sectors.forEach(function(s){
+        cfgSchedules[s.id]=s.schedules||[];
+        cfgEnabled[s.id]=s.enabled!==false;
+      });
+      renderStatus();
+      renderManual();
+    }catch(e){}
+  });
+}
+
+function setBadge(txt,type){
+  var b=document.getElementById('conn-badge');
+  b.textContent=txt;
+  b.className='badge badge-'+type;
+}
+
+function reconnect(){
+  connect(
+    document.getElementById('inp-broker').value,
+    document.getElementById('inp-port').value,
+    document.getElementById('inp-user').value,
+    document.getElementById('inp-pass').value
+  );
+}
+
+function publish(obj){
+  if(!client||!client.connected){toast('Sem conexão!');return;}
+  client.publish('irrigation/command',JSON.stringify(obj));
+  if(obj.cmd !== 'get_status'){
+    setTimeout(function(){
+      if(client&&client.connected) client.publish('irrigation/command','{"cmd":"get_status"}');
+    }, 1500);
+  }
+}
+
+function stopAll(){
+  if(confirm('Parar toda a irrigação agora?')) publish({cmd:'stop_all'});
+}
+
+function renderStatus(){
+  var s=state;
+  document.getElementById('m-sector').textContent=s.current_sector?('S'+s.current_sector):'—';
+  if(s.remaining_sec>0){
+    var m=Math.floor(s.remaining_sec/60),sec=s.remaining_sec%60;
+    document.getElementById('m-time').textContent=m+'m'+sec+'s';
+  } else {
+    document.getElementById('m-time').textContent='—';
+  }
+  var q=(s.queue&&s.queue.length)?s.queue.map(function(x){return'S'+x;}).join(' → '):'Vazio';
+  document.getElementById('queue-display').textContent=q;
+  document.getElementById('m-date').textContent=s.date||'—';
+  document.getElementById('m-time2').textContent=s.time||'—';
+
+  var html='';
+  (s.sectors||[]).forEach(function(sec){
+    var active=sec.id===s.current_sector;
+    var inQueue=(s.queue||[]).indexOf(sec.id)>=0;
+    var dur=sec.duration_min+'m'+(sec.duration_sec>0?sec.duration_sec+'s':'');
+    html+='<div class="sector-row">';
+    html+='<div class="dot '+(active?'dot-active':'dot-idle')+'"></div>';
+    html+='<span class="sector-name">'+(sec.name||'Setor '+sec.id)+'</span>';
+    html+='<span class="sector-dur">'+dur+'</span>';
+    if(active) html+='<span class="badge badge-ok">Irrigando</span>';
+    else if(inQueue) html+='<span class="badge badge-info">Na fila</span>';
+    else if(!sec.enabled) html+='<span class="badge badge-err">Inativo</span>';
+    else html+='<span class="badge badge-muted">Aguard.</span>';
+    html+='</div>';
+  });
+  document.getElementById('sectors-status').innerHTML=html||'<span style="font-size:13px;color:var(--muted)">Aguardando status...</span>';
+}
+
+function renderManual(){
+  var sectors=state.sectors||[1,2,3,4,5,6].map(function(i){return{id:i,name:'Setor '+i};});
+  var html='';
+  sectors.forEach(function(sec){
+    html+='<div class="manual-row">';
+    html+='<span class="manual-name">'+(sec.name||'Setor '+sec.id)+'</span>';
+    html+='<button class="btn-on" onclick="publish({cmd:\'manual_on\',sector:'+sec.id+'})">Ligar</button>';
+    html+='<button class="btn-off" onclick="publish({cmd:\'manual_off\',sector:'+sec.id+'})">Desligar</button>';
+    html+='</div>';
+  });
+  document.getElementById('manual-sectors').innerHTML=html;
+}
+
+function loadSector(){
+  var sid=parseInt(document.getElementById('cfg-sector').value);
+  var sec=(state.sectors||[]).find(function(s){return s.id===sid;});
+  if(sec){
+    document.getElementById('cfg-name').value=sec.name||'Setor '+sid;
+    document.getElementById('cfg-min').value=sec.duration_min||5;
+    document.getElementById('cfg-sec').value=sec.duration_sec||0;
+    cfgSchedules[sid]=sec.schedules||[];
+    cfgEnabled[sid]=sec.enabled!==false;
+  }
+  var tog=document.getElementById('cfg-toggle');
+  if(cfgEnabled[sid]) tog.classList.add('on'); else tog.classList.remove('on');
+  renderTags(sid);
+}
+
+function toggleEnabled(){
+  var sid=parseInt(document.getElementById('cfg-sector').value);
+  cfgEnabled[sid]=!cfgEnabled[sid];
+  var tog=document.getElementById('cfg-toggle');
+  if(cfgEnabled[sid]) tog.classList.add('on'); else tog.classList.remove('on');
+}
+
+function renderTags(sid){
+  var html='';
+  (cfgSchedules[sid]||[]).forEach(function(t){
+    html+='<span class="sched-tag">'+t+' <span class="sched-tag-x" onclick="removeSchedule(\''+t+'\')">×</span></span>';
+  });
+  document.getElementById('sched-tags').innerHTML=html||'<span style="font-size:12px;color:var(--muted)">Nenhum horário adicionado</span>';
+}
+
+function addSchedule(){
+  var sid=parseInt(document.getElementById('cfg-sector').value);
+  var val=document.getElementById('new-sched').value.trim();
+  if(!/^\d{2}:\d{2}$/.test(val)){toast('Formato inválido! Use HH:MM');return;}
+  if(!cfgSchedules[sid]) cfgSchedules[sid]=[];
+  if(cfgSchedules[sid].length>=12){toast('Máximo 12 horários por setor');return;}
+  if(cfgSchedules[sid].indexOf(val)<0) cfgSchedules[sid].push(val);
+  cfgSchedules[sid].sort();
+  document.getElementById('new-sched').value='';
+  renderTags(sid);
+}
+
+function removeSchedule(t){
+  var sid=parseInt(document.getElementById('cfg-sector').value);
+  cfgSchedules[sid]=(cfgSchedules[sid]||[]).filter(function(x){return x!==t;});
+  renderTags(sid);
+}
+
+function saveSector(){
+  var sid=parseInt(document.getElementById('cfg-sector').value);
+  publish({
+    cmd:'set_sector',
+    sector:sid,
+    name:document.getElementById('cfg-name').value||'Setor '+sid,
+    duration_min:parseInt(document.getElementById('cfg-min').value)||0,
+    duration_sec:parseInt(document.getElementById('cfg-sec').value)||0,
+    enabled:cfgEnabled[sid],
+    schedules:cfgSchedules[sid]||[]
+  });
+  toast('Setor '+sid+' salvo!');
+}
+
+renderManual();
+renderStatus();
+connect('c86e558c1fad43f3a1e17c54e2c50d1e.s1.eu.hivemq.cloud','8884','esp32','Irrigacao123');
+</script>
+</body>
+</html>
