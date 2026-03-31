@@ -427,7 +427,7 @@
       <label class="cfg-label">Broker MQTT</label>
       <input class="cfg-input" id="inp-broker" value="broker.hivemq.com">
       <label class="cfg-label">Porta WebSocket</label>
-      <input class="cfg-input" id="inp-port" value="8000" type="number">
+      <input class="cfg-input" id="inp-port" value="8884" type="number">
       <label class="cfg-label">Usuário (opcional)</label>
       <input class="cfg-input" id="inp-user" placeholder="deixe em branco se não usar">
       <label class="cfg-label">Senha (opcional)</label>
@@ -475,7 +475,7 @@ function connect(broker,port,user,pass){
   var opts={clientId:'app_irrig_'+Math.random().toString(16).slice(2),clean:true};
   if(user) opts.username=user;
   if(pass) opts.password=pass;
-  var url='ws://'+broker+':'+port+'/mqtt';
+  var url='wss://'+broker+':'+port+'/mqtt';
   setBadge('Conectando...','warn');
   client=mqtt.connect(url,opts);
   client.on('connect',function(){
@@ -633,7 +633,7 @@ function saveSector(){
 
 renderManual();
 renderStatus();
-connect('broker.hivemq.com','8000','','');
+connect('broker.hivemq.com','8884','','');
 </script>
 </body>
 </html>
