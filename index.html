@@ -10,45 +10,23 @@
 :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;--text:#e8eaf6;--muted:#7b80a0;--green:#00e5a0;--red:#ff4d6d;--amber:#ffb830;--blue:#4d9fff;--radius:12px;--radius-sm:8px;--mono:'Space Mono',monospace;--sans:'Syne',sans-serif}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
-#tela-acesso{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
-.acesso-logo{font-size:48px;margin-bottom:16px}
-.acesso-title{font-size:22px;font-weight:800;margin-bottom:4px;text-align:center}
-.acesso-sub{font-size:13px;color:var(--muted);margin-bottom:32px;text-align:center;font-family:var(--mono)}
-.acesso-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:360px}
-.acesso-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:8px}
-.acesso-input{width:100%;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--mono);font-size:16px;outline:none;text-align:center;letter-spacing:2px;text-transform:uppercase}
-.acesso-input:focus{border-color:var(--green)}
-.acesso-btn{width:100%;padding:14px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-family:var(--sans);font-size:15px;font-weight:800;cursor:pointer;margin-top:14px}
-.acesso-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.6}
-#tela-ble{position:fixed;inset:0;background:var(--bg);z-index:998;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px}
-.ble-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:100%;max-width:360px}
-.ble-step{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
-.ble-step:last-child{border-bottom:none}
-.ble-num{width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ble-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:6px;margin-top:12px}
-.ble-label:first-child{margin-top:0}
-.ble-input{width:100%;padding:11px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
-.ble-btn{width:100%;padding:13px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-family:var(--sans);font-size:14px;font-weight:800;cursor:pointer;margin-top:14px}
-.ble-skip{display:block;text-align:center;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer;text-decoration:underline}
-.device-badge{font-family:var(--mono);font-size:10px;background:rgba(0,229,160,.12);color:var(--green);border:1px solid rgba(0,229,160,.3);border-radius:20px;padding:3px 9px;cursor:pointer}
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.header-title{font-size:15px;font-weight:800;letter-spacing:-.3px}
+.header-title{font-size:15px;font-weight:800}
 .header-sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px}
-.header-right{display:flex;align-items:center;gap:8px}
-.conn-dot{width:10px;height:10px;border-radius:50%;background:var(--red);transition:background .3s;flex-shrink:0}
+.conn-dot{width:10px;height:10px;border-radius:50%;background:var(--red);transition:background .3s}
 .conn-dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
 .tabs{display:flex;gap:2px;background:var(--surface);border-bottom:1px solid var(--border);padding:8px 10px;overflow-x:auto;position:sticky;top:55px;z-index:40}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:0 0 auto;padding:7px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab{flex:0 0 auto;padding:7px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .tab.active{background:var(--green);color:#000;border-color:var(--green)}
 .container{max-width:520px;margin:0 auto;padding:14px 12px 100px}
-.stop-btn{width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:var(--radius);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px}
+.stop-btn{width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
 .card-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
 .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
-.metric-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
-.metric-val{font-size:22px;font-weight:800;font-family:var(--mono);margin-top:4px;color:var(--text)}
+.metric-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.metric-val{font-size:22px;font-weight:800;font-family:var(--mono);margin-top:4px}
 .sector-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
 .sector-row:last-child{border-bottom:none;padding-bottom:0}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0}
@@ -56,12 +34,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .dot-idle{background:var(--muted)}
 .sector-name{font-size:13px;font-weight:700;flex:1}
 .sector-sched{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.3px}
+.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
 .badge-ok{background:rgba(0,229,160,.15);color:var(--green)}
 .badge-muted{background:var(--surface2);color:var(--muted)}
 .timer-card{background:linear-gradient(135deg,rgba(0,229,160,.08),rgba(0,184,125,.04));border:1px solid rgba(0,229,160,.25);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:none}
 .timer-card.active{display:block}
-.timer-label{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px}
+.timer-label{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase}
 .timer-val{font-size:36px;font-weight:700;font-family:var(--mono);color:var(--green);margin-top:4px}
 .timer-sector{font-size:13px;color:var(--muted);margin-top:2px}
 .hist-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
@@ -70,17 +48,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .hist-title{font-size:13px;font-weight:600}
 .hist-time{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:1px}
 .hist-dur{font-size:11px;font-weight:700;color:var(--green);font-family:var(--mono)}
-.btn-on{padding:7px 13px;background:rgba(0,229,160,.12);border:1px solid var(--green);color:var(--green);border-radius:var(--radius-sm);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer}
-.btn-off{padding:7px 13px;background:rgba(255,77,109,.1);border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer}
-.save-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer}
-.btn-add{padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer}
+.btn-on{padding:7px 13px;background:rgba(0,229,160,.12);border:1px solid var(--green);color:var(--green);border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer}
+.btn-off{padding:7px 13px;background:rgba(255,77,109,.1);border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer}
+.save-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer}
+.btn-add{padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;font-weight:700;cursor:pointer}
 .cfg-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:6px;margin-top:12px}
 .cfg-label:first-child{margin-top:0}
 .cfg-input{width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
 .cfg-input:focus{border-color:var(--green)}
 select.cfg-input{cursor:pointer}
 .sched-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
-.sched-tag{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;font-family:var(--mono);color:var(--text);display:flex;align-items:center;gap:6px}
+.sched-tag{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;font-family:var(--mono);display:flex;align-items:center;gap:6px}
 .sched-tag-x{color:var(--muted);cursor:pointer;font-size:16px;line-height:1}
 .sched-input{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
 .toggle{width:44px;height:24px;border-radius:12px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background .2s}
@@ -90,69 +68,36 @@ select.cfg-input{cursor:pointer}
 .rtc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
 .rtc-field label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px}
 .rtc-field input{width:100%;padding:9px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--mono);font-size:14px;text-align:center;outline:none}
-.conn-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;margin-top:14px}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap}
+.info-box{background:rgba(77,159,255,.08);border:1px solid rgba(77,159,255,.2);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--muted);line-height:1.7}
+.info-box strong{color:var(--blue)}
+.conn-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;margin-top:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
 .toast.show{opacity:1}
 </style>
 </head>
 <body>
 
-<div id="tela-acesso">
-  <div class="acesso-logo">🌱</div>
-  <div class="acesso-title">Irrigação Morango</div>
-  <div class="acesso-sub">Sistema de automacao semi-hidroponico</div>
-  <div class="acesso-card">
-    <label class="acesso-label">ID do seu kit</label>
-    <input class="acesso-input" id="acesso-id" placeholder="IRR_001" maxlength="10">
-    <button class="acesso-btn" onclick="entrar()">Entrar no sistema</button>
-    <div class="acesso-hint">O ID esta na etiqueta do seu kit.<br>Ex: IRR_001, IRR_042</div>
-  </div>
-</div>
-
-<div id="tela-ble" style="display:none">
-  <div style="font-size:48px;margin-bottom:16px">📶</div>
-  <div style="font-size:20px;font-weight:800;margin-bottom:4px;text-align:center">Configurar WiFi</div>
-  <div style="font-size:13px;color:var(--muted);margin-bottom:24px;text-align:center;font-family:var(--mono)" id="ble-device-name">Irrigacao-irr_001</div>
-  <div class="ble-card">
-    <div class="ble-step"><div class="ble-num">1</div><span>Ative o Bluetooth no iPhone</span></div>
-    <div class="ble-step"><div class="ble-num">2</div><span>Preencha os dados do WiFi</span></div>
-    <div class="ble-step"><div class="ble-num">3</div><span>Clique em Enviar e aguarde</span></div>
-    <div style="margin-top:16px">
-      <label class="ble-label">Nome do WiFi (SSID)</label>
-      <input class="ble-input" id="ble-ssid" placeholder="Nome da sua rede">
-      <label class="ble-label">Senha do WiFi</label>
-      <input class="ble-input" id="ble-pass" type="password" placeholder="Senha da rede">
-      <button class="ble-btn" onclick="enviarBLE()">📶 Enviar WiFi via Bluetooth</button>
-    </div>
-    <span class="ble-skip" onclick="pularBLE()">Pular — WiFi ja configurado</span>
-  </div>
-</div>
-
-<div id="app-principal" style="display:none">
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigacao</div>
-    <div class="header-sub" id="rtc-display">Morango semi-hidroponico</div>
+    <div class="header-title">🌱 Irrigação</div>
+    <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
-  <div class="header-right">
-    <span class="device-badge" id="device-badge" onclick="trocarKit()">irr_001</span>
-    <div class="conn-dot" id="conn-dot"></div>
-  </div>
+  <div class="conn-dot" id="conn-dot"></div>
 </div>
 
 <div class="tabs">
   <button class="tab active" onclick="showTab('status',this)">Status</button>
   <button class="tab" onclick="showTab('manual',this)">Manual</button>
   <button class="tab" onclick="showTab('config',this)">Configurar</button>
-  <button class="tab" onclick="showTab('historico',this)">Historico</button>
-  <button class="tab" onclick="showTab('rtc',this)">Relogio</button>
+  <button class="tab" onclick="showTab('historico',this)">Histórico</button>
+  <button class="tab" onclick="showTab('rtc',this)">Relógio</button>
   <button class="tab" onclick="showTab('ferti',this)">Ferti</button>
   <button class="tab" onclick="showTab('wifi',this)">WiFi</button>
-  <button class="tab" onclick="showTab('conn',this)">Conexao</button>
+  <button class="tab" onclick="showTab('conn',this)">Conexão</button>
 </div>
 
 <div class="container">
-  <button class="stop-btn" onclick="stopAll()">⛔ Parada de emergencia</button>
+  <button class="stop-btn" onclick="stopAll()">⛔ Parada de emergência</button>
 
   <div id="tab-status">
     <div class="timer-card" id="timer-card">
@@ -165,7 +110,7 @@ select.cfg-input{cursor:pointer}
       <div class="metric"><div class="metric-label">Setor ativo</div><div class="metric-val" id="st-sector" style="color:var(--muted)">—</div></div>
     </div>
     <div class="card"><div class="card-title">Setores</div><div id="st-sectors"><div style="color:var(--muted);font-size:13px">Aguardando dados...</div></div></div>
-    <div class="card"><div class="card-title">Horario do sistema</div><div id="st-datetime" style="font-family:var(--mono);font-size:14px;color:var(--muted)">—</div></div>
+    <div class="card"><div class="card-title">Horário do sistema</div><div id="st-datetime" style="font-family:var(--mono);font-size:14px;color:var(--muted)">—</div></div>
   </div>
 
   <div id="tab-manual" style="display:none">
@@ -176,31 +121,43 @@ select.cfg-input{cursor:pointer}
     <div class="card"><div class="card-title">Setor</div><select class="cfg-input" id="cfg-sector-sel" onchange="loadSector()"><option value="0">Selecione...</option></select></div>
     <div id="cfg-sector-form" style="display:none">
       <div class="card">
-        <div class="card-title">Nome e duracao</div>
-        <label class="cfg-label">Nome do setor</label><input class="cfg-input" id="cfg-name" placeholder="Ex: Lavoura 1">
-        <label class="cfg-label">Duracao (minutos)</label><input class="cfg-input" id="cfg-duration" type="number" min="1" max="120" value="15">
-        <label class="cfg-label" style="margin-top:14px">Ativo</label><button class="toggle on" id="cfg-toggle" onclick="toggleEnabled()"></button>
+        <div class="card-title">Nome e duração</div>
+        <label class="cfg-label">Nome do setor</label>
+        <input class="cfg-input" id="cfg-name" placeholder="Ex: Lavoura 1 — Sul">
+        <label class="cfg-label">Duração</label>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <input class="cfg-input" id="cfg-duration-min" type="number" min="0" max="120" value="15">
+            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">minutos</div>
+          </div>
+          <div style="flex:1">
+            <input class="cfg-input" id="cfg-duration-sec" type="number" min="0" max="59" value="0">
+            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">segundos</div>
+          </div>
+        </div>
+        <label class="cfg-label" style="margin-top:14px">Ativo</label>
+        <button class="toggle on" id="cfg-toggle" onclick="toggleEnabled()"></button>
       </div>
       <div class="card">
-        <div class="card-title">Horarios automaticos</div>
+        <div class="card-title">Horários automáticos</div>
         <div class="sched-tags" id="cfg-sched-tags"></div>
         <div style="display:flex;gap:8px;margin-top:8px">
           <input class="sched-input" id="cfg-sched-input" type="text" placeholder="HH:MM" style="width:90px">
           <button class="btn-add" onclick="addSchedule()">+ Adicionar</button>
         </div>
       </div>
-      <button class="save-btn" onclick="saveSector()">Salvar configuracoes</button>
+      <button class="save-btn" onclick="saveSector()">Salvar configurações</button>
     </div>
   </div>
 
   <div id="tab-historico" style="display:none">
-    <div class="card"><div class="card-title">Ultimas irrigacoes</div><div id="hist-list"><div style="color:var(--muted);font-size:13px">Nenhum historico ainda</div></div></div>
-    <button class="btn-add" style="width:100%;padding:10px" onclick="clearHistory()">🗑 Limpar historico</button>
+    <div class="card"><div class="card-title">Últimas irrigações</div><div id="hist-list"><div style="color:var(--muted);font-size:13px">Nenhum histórico ainda</div></div></div>
+    <button class="btn-add" style="width:100%;padding:10px" onclick="clearHistory()">🗑 Limpar histórico</button>
   </div>
 
   <div id="tab-rtc" style="display:none">
     <div class="card">
-      <div class="card-title">Horario atual do ESP32</div>
+      <div class="card-title">Horário atual do ESP32</div>
       <div id="rtc-current" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green);margin-bottom:4px">—</div>
       <div id="rtc-date" style="font-size:12px;color:var(--muted);font-family:var(--mono)">—</div>
     </div>
@@ -208,7 +165,7 @@ select.cfg-input{cursor:pointer}
       <div class="card-title">Ajustar data e hora</div>
       <div class="rtc-grid">
         <div class="rtc-field"><label>Dia</label><input id="rtc-day" type="number" min="1" max="31" placeholder="DD"></div>
-        <div class="rtc-field"><label>Mes</label><input id="rtc-month" type="number" min="1" max="12" placeholder="MM"></div>
+        <div class="rtc-field"><label>Mês</label><input id="rtc-month" type="number" min="1" max="12" placeholder="MM"></div>
         <div class="rtc-field"><label>Ano</label><input id="rtc-year" type="number" min="2024" max="2099" placeholder="AAAA"></div>
       </div>
       <div class="rtc-grid">
@@ -216,7 +173,7 @@ select.cfg-input{cursor:pointer}
         <div class="rtc-field"><label>Min</label><input id="rtc-min" type="number" min="0" max="59" placeholder="MM"></div>
         <div class="rtc-field"><label>Seg</label><input id="rtc-sec" type="number" min="0" max="59" placeholder="SS"></div>
       </div>
-      <button class="btn-add" style="width:100%;padding:10px;margin-bottom:8px" onclick="fillNow()">📱 Usar horario do celular</button>
+      <button class="btn-add" style="width:100%;padding:10px;margin-bottom:8px" onclick="fillNow()">📱 Usar horário do celular</button>
       <button class="save-btn" onclick="sendRTC()">⏰ Enviar para ESP32</button>
     </div>
   </div>
@@ -224,14 +181,14 @@ select.cfg-input{cursor:pointer}
   <div id="tab-ferti" style="display:none">
     <div class="card">
       <div class="card-title">EC em tempo real</div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
         <div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase">Atual</div><div id="ec-atual" style="font-size:32px;font-weight:800;font-family:var(--mono);color:var(--green)">—</div><div style="font-size:11px;color:var(--muted)">mS/cm</div></div>
         <div style="text-align:right"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase">Alvo</div><div id="ec-alvo" style="font-size:32px;font-weight:800;font-family:var(--mono);color:var(--blue)">—</div><div style="font-size:11px;color:var(--muted)">mS/cm</div></div>
       </div>
     </div>
     <div class="card"><div class="card-title">Par por setor</div><div id="ferti-setor-config"><div style="color:var(--muted);font-size:13px">Aguardando setores...</div></div></div>
     <div class="card">
-      <div class="card-title">Curva EC — <select id="ferti-par-select" onchange="loadFertiCurva()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;font-family:var(--sans)"><option value="A">Par A</option><option value="B">Par B</option><option value="C">Par C</option></select></div>
+      <div class="card-title">Curva EC — <select id="ferti-par-select" onchange="loadFertiCurva()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700"><option value="A">Par A</option><option value="B">Par B</option><option value="C">Par C</option></select></div>
       <div id="ferti-curva-list"></div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <input class="sched-input" id="ferti-hora" placeholder="HH:MM" style="width:85px">
@@ -250,114 +207,88 @@ select.cfg-input{cursor:pointer}
 
   <div id="tab-wifi" style="display:none">
     <div class="card">
-      <div class="card-title">Reconfigurar WiFi via Bluetooth</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Use se o WiFi da lavoura mudar.</div>
-      <label class="cfg-label">Nome do WiFi (SSID)</label><input class="cfg-input" id="wifi-ssid" placeholder="Nome da rede">
-      <label class="cfg-label">Senha do WiFi</label><input class="cfg-input" id="wifi-pass" type="password" placeholder="Senha da rede">
-      <button class="save-btn" style="margin-top:14px" onclick="enviarWifiBLE()">📶 Enviar via Bluetooth</button>
+      <div class="card-title">Configurar / reconfigurar WiFi do controlador</div>
+      <div class="info-box">
+        <strong>Primeiro uso:</strong> ao ligar o controlador, ele cria a rede WiFi <strong>Irrigacao-esp32_irrigacao</strong>.<br><br>
+        1. Conecte o celular nessa rede (senha: <strong>irrigacao123</strong>)<br>
+        2. Abra o navegador em <strong>192.168.4.1</strong><br>
+        3. Preencha o nome e senha do WiFi da lavoura<br>
+        4. O controlador reinicia conectado<br><br>
+        <strong>Para trocar o WiFi depois:</strong> use o botão abaixo.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Forçar reconfiguração via MQTT</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Envia comando para o controlador entrar em modo portal WiFi.</div>
+      <button class="save-btn" onclick="forcarReconfig()">📶 Resetar WiFi</button>
     </div>
   </div>
 
   <div id="tab-conn" style="display:none">
     <div class="card">
-      <div class="card-title">Kit conectado</div>
-      <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green);margin-bottom:8px" id="conn-device-id">—</div>
-      <label class="cfg-label">Broker MQTT</label><input class="cfg-input" id="inp-broker" value="c86e558c1fad43f3a1e17c54e2c50d1e.s1.eu.hivemq.cloud">
-      <label class="cfg-label">Porta WebSocket</label><input class="cfg-input" id="inp-port" value="8884" type="number">
-      <label class="cfg-label">Usuario</label><input class="cfg-input" id="inp-user">
-      <label class="cfg-label">Senha</label><input class="cfg-input" id="inp-pass" type="password">
-      <button class="conn-btn" onclick="reconnect()">Reconectar</button>
+      <div class="card-title">⚠️ Primeira conexão</div>
+      <div class="info-box" style="line-height:1.7">
+        Como o broker usa <strong>certificado TLS auto-assinado</strong>, na primeira vez (por dispositivo) você precisa aceitar o certificado:<br><br>
+        1. Abra no navegador: <strong id="cert-url">https://100.104.61.123:8884</strong><br>
+        2. Aparece aviso de "conexão não privada"<br>
+        3. Toque em <strong>Avançado</strong> → <strong>Continuar mesmo assim</strong><br>
+        4. Pode aparecer erro/conexão fechada — é normal<br>
+        5. Volte para esta aba e toque em "Conectar"<br><br>
+        Depois disso, a conexão WSS funciona normalmente.
+      </div>
     </div>
-    <div class="card"><div class="card-title">Topicos MQTT ativos</div><div id="conn-topics" style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:2">—</div></div>
-    <button class="btn-add" style="width:100%;padding:10px" onclick="trocarKit()">Trocar de kit</button>
+    <div class="card">
+      <div class="card-title">Servidor MQTT</div>
+      <label class="cfg-label">Broker (IP do Raspberry Pi)</label>
+      <input class="cfg-input" id="inp-broker" placeholder="100.xxx.xxx.xxx" value="100.104.61.123">
+      <label class="cfg-label">Porta WebSocket TLS</label>
+      <input class="cfg-input" id="inp-port" value="8884" type="number">
+      <label class="cfg-label">Usuário</label>
+      <input class="cfg-input" id="inp-user" value="webapp">
+      <label class="cfg-label">Senha</label>
+      <input class="cfg-input" id="inp-pass" type="password" value="J7M1SCGleejEIDkF">
+      <button class="conn-btn" onclick="reconnect()">Conectar / Reconectar</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Tópicos MQTT</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:2">
+        irrigation/status <span style="color:var(--green)">(retain)</span><br>
+        irrigation/command<br>
+        irrigation/schedule <span style="color:var(--green)">(retain)</span><br>
+        fertigacao/status <span style="color:var(--green)">(retain)</span><br>
+        fertigacao/command<br>
+        estacao/dados<br>
+        sensores/+/dados
+      </div>
+    </div>
   </div>
-</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-var deviceId='',client=null,state={sectors:[],pump:false,current_sector:null,datetime:''};
+var client=null;
+var state={sectors:[],pump:false,current_sector:null,datetime:''};
 var cfgSchedules={},cfgEnabled={},currentSectorId=null;
 var fertiCurvas={A:[],B:[],C:[]},fertiSetores={};
-var irrigHistory=[],timerInterval=null,timerStart=null,timerSector=null;
+var irrigHistory=JSON.parse(localStorage.getItem('hist')||'[]');
+var timerInterval=null,timerStart=null,timerSector=null;
 for(var i=1;i<=6;i++){fertiSetores[i]='A';cfgSchedules[i]=[];cfgEnabled[i]=true;}
 
 function init(){
-  var params=new URLSearchParams(window.location.search);
-  var idUrl=params.get('id');
-  if(idUrl)document.getElementById('acesso-id').value=idUrl.toUpperCase();
-  var idSalvo=localStorage.getItem('device_id');
-  if(idSalvo){document.getElementById('acesso-id').value=idSalvo.toUpperCase();entrar(true);}
-}
-
-function entrar(silencioso){
-  var val=document.getElementById('acesso-id').value.trim().toLowerCase();
-  if(!val){toast('Digite o ID do kit!');return;}
-  if(val.match(/^irr\d+$/)&&!val.includes('_'))val=val.replace('irr','irr_');
-  deviceId=val;
-  localStorage.setItem('device_id',deviceId);
-  document.getElementById('device-badge').textContent=deviceId;
-  document.getElementById('conn-device-id').textContent=deviceId;
-  document.getElementById('ble-device-name').textContent='Irrigacao-'+deviceId;
-  document.getElementById('inp-user').value=deviceId;
-  document.getElementById('inp-pass').value='';
-  var prefix=deviceId+'/';
-  document.getElementById('conn-topics').innerHTML=prefix+'irrigation/status<br>'+prefix+'irrigation/command<br>'+prefix+'irrigation/schedule<br>'+prefix+'fertigacao/status<br>'+prefix+'fertigacao/command';
-  irrigHistory=JSON.parse(localStorage.getItem('hist_'+deviceId)||'[]');
-  var primeiroUso=!localStorage.getItem('wifi_ok_'+deviceId);
-  if(primeiroUso&&!silencioso){document.getElementById('tela-acesso').style.display='none';document.getElementById('tela-ble').style.display='flex';}
-  else abrirApp();
-}
-
-function pularBLE(){localStorage.setItem('wifi_ok_'+deviceId,'1');abrirApp();}
-
-function abrirApp(){
-  document.getElementById('tela-acesso').style.display='none';
-  document.getElementById('tela-ble').style.display='none';
-  document.getElementById('app-principal').style.display='block';
-  renderHistory();connect();
-}
-
-function trocarKit(){
-  if(client){try{client.end(true);}catch(e){}}
-  client=null;deviceId='';
-  state={sectors:[],pump:false,current_sector:null,datetime:''};
-  document.getElementById('app-principal').style.display='none';
-  document.getElementById('tela-acesso').style.display='flex';
-  document.getElementById('conn-dot').classList.remove('on');
-}
-
-async function enviarBLE(){
-  var ssid=document.getElementById('ble-ssid').value.trim();
-  var pass=document.getElementById('ble-pass').value;
-  if(!ssid){toast('Digite o nome do WiFi!');return;}
-  if(!navigator.bluetooth){toast('Bluetooth nao disponivel');return;}
-  try{
-    toast('Procurando dispositivo...');
-    var device=await navigator.bluetooth.requestDevice({filters:[{name:'Irrigacao-'+deviceId}],optionalServices:['6e400001-b5a3-f393-e0a9-e50e24dcca9e']});
-    var server=await device.gatt.connect();
-    var service=await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-    var rxChar=await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
-    await rxChar.writeValue(new TextEncoder().encode(JSON.stringify({cmd:'set_wifi',ssid:ssid,pass:pass})+'\n'));
-    localStorage.setItem('wifi_ok_'+deviceId,'1');
-    toast('WiFi enviado!');setTimeout(abrirApp,1500);
-  }catch(e){toast('Erro: '+e.message);}
-}
-
-async function enviarWifiBLE(){
-  var ssid=document.getElementById('wifi-ssid').value.trim();
-  var pass=document.getElementById('wifi-pass').value;
-  if(!ssid){toast('Digite o nome do WiFi!');return;}
-  if(!navigator.bluetooth){toast('Bluetooth nao disponivel');return;}
-  try{
-    var device=await navigator.bluetooth.requestDevice({filters:[{name:'Irrigacao-'+deviceId}],optionalServices:['6e400001-b5a3-f393-e0a9-e50e24dcca9e']});
-    var server=await device.gatt.connect();
-    var service=await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-    var rxChar=await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
-    await rxChar.writeValue(new TextEncoder().encode(JSON.stringify({cmd:'set_wifi',ssid:ssid,pass:pass})+'\n'));
-    toast('Novo WiFi enviado!');
-  }catch(e){toast('Erro: '+e.message);}
+  // Carrega config MQTT salvo no localStorage
+  var saved=JSON.parse(localStorage.getItem('mqtt_cfg')||'{}');
+  if(saved.broker)document.getElementById('inp-broker').value=saved.broker;
+  if(saved.port)document.getElementById('inp-port').value=saved.port;
+  if(saved.user)document.getElementById('inp-user').value=saved.user;
+  if(saved.pass)document.getElementById('inp-pass').value=saved.pass;
+  // Atualiza link do certificado com broker atual
+  var broker=document.getElementById('inp-broker').value;
+  var port=document.getElementById('inp-port').value;
+  var certEl=document.getElementById('cert-url');
+  if(certEl&&broker)certEl.textContent='https://'+broker+':'+port;
+  renderHistory();
+  if(saved.broker||document.getElementById('inp-broker').value)connect();
 }
 
 function showTab(name,el){
@@ -372,23 +303,46 @@ function showTab(name,el){
 var toastTimer;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show');},2500);}
 
-function topic(s){return deviceId+'/'+s;}
-
 function connect(){
   var broker=document.getElementById('inp-broker').value.trim();
   var port=parseInt(document.getElementById('inp-port').value);
-  var user=document.getElementById('inp-user').value.trim()||deviceId;
+  var user=document.getElementById('inp-user').value.trim();
   var pass=document.getElementById('inp-pass').value.trim();
+  if(!broker){toast('Preencha o broker!');return;}
+  // Salva config
+  localStorage.setItem('mqtt_cfg',JSON.stringify({broker:broker,port:port,user:user,pass:pass}));
+  // Atualiza URL exibida na aba de conexao
+  var certEl=document.getElementById('cert-url');
+  if(certEl)certEl.textContent='https://'+broker+':'+port;
   if(client){try{client.end(true);}catch(e){}}
-  client=mqtt.connect('wss://'+broker+':'+port+'/mqtt',{username:user,password:pass,clientId:'irrig_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,keepalive:30});
-  client.on('connect',function(){document.getElementById('conn-dot').classList.add('on');client.subscribe(topic('irrigation/status'));client.subscribe(topic('irrigation/schedule'));client.subscribe(topic('fertigacao/status'));toast('Conectado — '+deviceId);});
+  // Porta 8884 = WSS (TLS), demais portas = WS
+  var proto=(port===8884||location.protocol==='https:')?'wss://':'ws://';
+  client=mqtt.connect(proto+broker+':'+port+'/mqtt',{username:user,password:pass,clientId:'irrig_app_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,keepalive:30});
+  client.on('connect',function(){
+    document.getElementById('conn-dot').classList.add('on');
+    client.subscribe('irrigation/status');
+    client.subscribe('irrigation/schedule');
+    client.subscribe('fertigacao/status');
+    toast('✅ Conectado!');
+  });
   client.on('offline',function(){document.getElementById('conn-dot').classList.remove('on');});
-  client.on('error',function(){document.getElementById('conn-dot').classList.remove('on');});
-  client.on('message',function(t,msg){try{var d=JSON.parse(msg.toString());if(t===topic('irrigation/status'))onStatus(d);if(t===topic('irrigation/schedule'))onSchedule(d);if(t===topic('fertigacao/status'))onFertiStatus(d);}catch(e){}});
+  client.on('error',function(err){
+    document.getElementById('conn-dot').classList.remove('on');
+    console.error('MQTT erro:',err);
+    toast('❌ Erro: '+(err.message||'sem conexão'));
+  });
+  client.on('message',function(t,msg){
+    try{var d=JSON.parse(msg.toString());
+      if(t==='irrigation/status')onStatus(d);
+      if(t==='irrigation/schedule')onSchedule(d);
+      if(t==='fertigacao/status')onFertiStatus(d);
+    }catch(e){}
+  });
 }
+
 function reconnect(){connect();toast('Reconectando...');}
-function publish(obj){if(!client||!client.connected){toast('Sem conexao!');return;}client.publish(topic('irrigation/command'),JSON.stringify(obj));}
-function publishFerti(obj){if(!client||!client.connected){toast('Sem conexao!');return;}client.publish(topic('fertigacao/command'),JSON.stringify(obj));}
+function publish(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('irrigation/command',JSON.stringify(obj));}
+function publishFerti(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('fertigacao/command',JSON.stringify(obj));}
 
 function onStatus(data){
   state=data;
@@ -398,11 +352,28 @@ function onStatus(data){
   var cur=data.current_sector;
   document.getElementById('st-sector').textContent=cur?'S'+cur:'—';
   document.getElementById('st-sector').style.color=cur?'var(--green)':'var(--muted)';
-  if(data.datetime){document.getElementById('st-datetime').textContent=data.datetime;document.getElementById('rtc-display').textContent=data.datetime;var p=data.datetime.split(' ');document.getElementById('rtc-current').textContent=p[1]||'—';document.getElementById('rtc-date').textContent=p[0]||'—';}
+  if(data.datetime){
+    document.getElementById('st-datetime').textContent=data.datetime;
+    document.getElementById('rtc-display').textContent=data.datetime;
+    var p=data.datetime.split(' ');
+    document.getElementById('rtc-current').textContent=p[1]||'—';
+    document.getElementById('rtc-date').textContent=p[0]||'—';
+  }
   handleTimer(data);renderStatus();renderManual();renderConfigSelector();
 }
-function onSchedule(data){if(data.sector_id&&data.schedules!==undefined){cfgSchedules[data.sector_id]=data.schedules||[];cfgEnabled[data.sector_id]=data.enabled!==false;renderStatus();}}
-function onFertiStatus(data){if(data.ec_atual!==undefined)document.getElementById('ec-atual').textContent=parseFloat(data.ec_atual).toFixed(2);if(data.ec_alvo!==undefined)document.getElementById('ec-alvo').textContent=parseFloat(data.ec_alvo).toFixed(2);}
+
+function onSchedule(data){
+  if(data.sector_id&&data.schedules!==undefined){
+    cfgSchedules[data.sector_id]=data.schedules||[];
+    cfgEnabled[data.sector_id]=data.enabled!==false;
+    renderStatus();
+  }
+}
+
+function onFertiStatus(data){
+  if(data.ec_atual!==undefined)document.getElementById('ec-atual').textContent=parseFloat(data.ec_atual).toFixed(2);
+  if(data.ec_alvo!==undefined)document.getElementById('ec-alvo').textContent=parseFloat(data.ec_alvo).toFixed(2);
+}
 
 function handleTimer(data){
   var card=document.getElementById('timer-card');
@@ -416,33 +387,108 @@ function handleTimer(data){
 }
 function updateTimer(){if(!timerStart)return;var s=Math.floor((Date.now()-timerStart)/1000),m=Math.floor(s/60);s=s%60;document.getElementById('timer-val').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
 
-function addHistory(sector,durSec){var now=new Date();irrigHistory.unshift({sector:sector,dur:durSec,ts:now.toLocaleString('pt-BR')});if(irrigHistory.length>50)irrigHistory.pop();localStorage.setItem('hist_'+deviceId,JSON.stringify(irrigHistory));renderHistory();}
-function renderHistory(){var el=document.getElementById('hist-list');if(!irrigHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum historico ainda</div>';return;}el.innerHTML=irrigHistory.map(function(h){var m=Math.floor(h.dur/60),s=h.dur%60,d=m>0?m+'min '+s+'s':s+'s';return '<div class="hist-item"><div class="hist-info"><div class="hist-title">💧 Setor '+h.sector+'</div><div class="hist-time">'+h.ts+'</div></div><div class="hist-dur">'+d+'</div></div>';}).join('');}
-function clearHistory(){irrigHistory=[];localStorage.removeItem('hist_'+deviceId);renderHistory();toast('Historico limpo!');}
+function addHistory(sector,durSec){var now=new Date();irrigHistory.unshift({sector:sector,dur:durSec,ts:now.toLocaleString('pt-BR')});if(irrigHistory.length>50)irrigHistory.pop();localStorage.setItem('hist',JSON.stringify(irrigHistory));renderHistory();}
+function renderHistory(){
+  var el=document.getElementById('hist-list');
+  if(!irrigHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum histórico ainda</div>';return;}
+  el.innerHTML=irrigHistory.map(function(h){var m=Math.floor(h.dur/60),s=h.dur%60,d=m>0?m+'min '+s+'s':s+'s';return '<div class="hist-item"><div class="hist-info"><div class="hist-title">💧 Setor '+h.sector+'</div><div class="hist-time">'+h.ts+'</div></div><div class="hist-dur">'+d+'</div></div>';}).join('');
+}
+function clearHistory(){irrigHistory=[];localStorage.removeItem('hist');renderHistory();toast('Histórico limpo!');}
 
-function renderStatus(){var sectors=state.sectors||[],el=document.getElementById('st-sectors');if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados...</div>';return;}el.innerHTML=sectors.map(function(sec){var active=state.current_sector==sec.id,scheds=cfgSchedules[sec.id]||sec.schedules||[],enabled=cfgEnabled[sec.id]!==false&&sec.enabled!==false;return '<div class="sector-row"><div class="dot '+(active?'dot-active':'dot-idle')+'"></div><div style="flex:1"><div class="sector-name">'+(sec.name||'Setor '+sec.id)+'</div><div class="sector-sched">'+(scheds.length?scheds.join(', '):'Sem horario')+'</div></div>'+(active?'<span class="badge badge-ok">Irrigando</span>':!enabled?'<span class="badge badge-muted">Desativado</span>':'<span class="badge badge-muted">Aguardando</span>')+'</div>';}).join('');}
-function renderManual(){var sectors=state.sectors||[],el=document.getElementById('manual-sectors');if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados...</div>';return;}el.innerHTML=sectors.map(function(sec){return '<div class="sector-row"><span class="sector-name" style="flex:1">'+(sec.name||'Setor '+sec.id)+'</span><button class="btn-on" onclick="publish({cmd:\'manual_on\',sector:'+sec.id+'})">Ligar</button><button class="btn-off" onclick="publish({cmd:\'manual_off\',sector:'+sec.id+'})">Desligar</button></div>';}).join('');}
-function renderConfigSelector(){var sel=document.getElementById('cfg-sector-sel'),sectors=state.sectors||[];if(!sectors.length)return;var cur=sel.value;sel.innerHTML='<option value="0">Selecione...</option>'+sectors.map(function(s){return '<option value="'+s.id+'"'+(s.id==cur?' selected':'')+'>'+(s.name||'Setor '+s.id)+'</option>';}).join('');}
-function loadSector(){var sid=parseInt(document.getElementById('cfg-sector-sel').value);if(!sid){document.getElementById('cfg-sector-form').style.display='none';return;}currentSectorId=sid;var sec=(state.sectors||[]).find(function(s){return s.id===sid;})||{};document.getElementById('cfg-name').value=sec.name||'';document.getElementById('cfg-duration').value=sec.duration||15;var enabled=cfgEnabled[sid]!==false&&sec.enabled!==false;document.getElementById('cfg-toggle').className='toggle'+(enabled?' on':'');cfgSchedules[sid]=cfgSchedules[sid]||sec.schedules||[];renderScheduleTags();document.getElementById('cfg-sector-form').style.display='';}
-function renderScheduleTags(){var sid=currentSectorId;if(!sid)return;document.getElementById('cfg-sched-tags').innerHTML=(cfgSchedules[sid]||[]).map(function(t){return '<div class="sched-tag">'+t+'<span class="sched-tag-x" onclick="removeSchedule(\''+t+'\')">×</span></div>';}).join('');}
-function addSchedule(){var val=document.getElementById('cfg-sched-input').value.trim();if(!/^\d{2}:\d{2}$/.test(val)){toast('Formato invalido! Use HH:MM');return;}var sid=currentSectorId;if(!cfgSchedules[sid])cfgSchedules[sid]=[];if(!cfgSchedules[sid].includes(val)){cfgSchedules[sid].push(val);cfgSchedules[sid].sort();}document.getElementById('cfg-sched-input').value='';renderScheduleTags();}
-function removeSchedule(t){var sid=currentSectorId;cfgSchedules[sid]=(cfgSchedules[sid]||[]).filter(function(x){return x!==t;});renderScheduleTags();}
+function renderStatus(){
+  var sectors=state.sectors||[],el=document.getElementById('st-sectors');
+  if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados...</div>';return;}
+  el.innerHTML=sectors.map(function(sec){
+    var active=state.current_sector==sec.id,scheds=cfgSchedules[sec.id]||sec.schedules||[],enabled=cfgEnabled[sec.id]!==false&&sec.enabled!==false;
+    var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
+    var dsec=sec.duration_sec||0;
+    var durStr=dmin+'min'+(dsec>0?' '+dsec+'s':'');
+    return '<div class="sector-row"><div class="dot '+(active?'dot-active':'dot-idle')+'"></div><div style="flex:1"><div class="sector-name">'+(sec.name||'Setor '+sec.id)+'</div><div class="sector-sched">'+(scheds.length?scheds.join(', '):'Sem horário')+' · '+durStr+'</div></div>'+(active?'<span class="badge badge-ok">Irrigando</span>':!enabled?'<span class="badge badge-muted">Desativado</span>':'<span class="badge badge-muted">Aguardando</span>')+'</div>';
+  }).join('');
+}
+
+function renderManual(){
+  var sectors=state.sectors||[],el=document.getElementById('manual-sectors');
+  if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados...</div>';return;}
+  el.innerHTML=sectors.map(function(sec){return '<div class="sector-row"><span class="sector-name" style="flex:1">'+(sec.name||'Setor '+sec.id)+'</span><button class="btn-on" onclick="publish({cmd:\'manual_on\',sector:'+sec.id+'})">Ligar</button><button class="btn-off" onclick="publish({cmd:\'manual_off\',sector:'+sec.id+'})">Desligar</button></div>';}).join('');
+}
+
+function renderConfigSelector(){
+  var sel=document.getElementById('cfg-sector-sel'),sectors=state.sectors||[];
+  if(!sectors.length)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="0">Selecione...</option>'+sectors.map(function(s){return '<option value="'+s.id+'"'+(s.id==cur?' selected':'')+'>'+(s.name||'Setor '+s.id)+'</option>';}).join('');
+}
+
+function loadSector(){
+  var sid=parseInt(document.getElementById('cfg-sector-sel').value);
+  if(!sid){document.getElementById('cfg-sector-form').style.display='none';return;}
+  currentSectorId=sid;
+  var sec=(state.sectors||[]).find(function(s){return s.id===sid;})||{};
+  document.getElementById('cfg-name').value=sec.name||'';
+  document.getElementById('cfg-duration-min').value=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
+  document.getElementById('cfg-duration-sec').value=sec.duration_sec||0;
+  var enabled=cfgEnabled[sid]!==false&&sec.enabled!==false;
+  document.getElementById('cfg-toggle').className='toggle'+(enabled?' on':'');
+  cfgSchedules[sid]=cfgSchedules[sid]||sec.schedules||[];
+  renderScheduleTags();
+  document.getElementById('cfg-sector-form').style.display='';
+}
+
+function renderScheduleTags(){
+  var sid=currentSectorId;if(!sid)return;
+  document.getElementById('cfg-sched-tags').innerHTML=(cfgSchedules[sid]||[]).map(function(t){return '<div class="sched-tag">'+t+'<span class="sched-tag-x" onclick="removeSchedule(\''+t+'\')">×</span></div>';}).join('');
+}
+function addSchedule(){
+  var val=document.getElementById('cfg-sched-input').value.trim();
+  if(!/^\d{2}:\d{2}$/.test(val)){toast('Formato inválido! Use HH:MM');return;}
+  if(!cfgSchedules[currentSectorId])cfgSchedules[currentSectorId]=[];
+  if(!cfgSchedules[currentSectorId].includes(val)){cfgSchedules[currentSectorId].push(val);cfgSchedules[currentSectorId].sort();}
+  document.getElementById('cfg-sched-input').value='';renderScheduleTags();
+}
+function removeSchedule(t){cfgSchedules[currentSectorId]=(cfgSchedules[currentSectorId]||[]).filter(function(x){return x!==t;});renderScheduleTags();}
 function toggleEnabled(){var tog=document.getElementById('cfg-toggle');tog.classList.toggle('on');if(currentSectorId)cfgEnabled[currentSectorId]=tog.classList.contains('on');}
-function saveSector(){var sid=currentSectorId;if(!sid)return;var payload={cmd:'set_sector',sector:sid,name:document.getElementById('cfg-name').value.trim(),duration:parseInt(document.getElementById('cfg-duration').value),enabled:document.getElementById('cfg-toggle').classList.contains('on'),schedules:cfgSchedules[sid]||[]};publish(payload);client.publish(topic('irrigation/schedule'),JSON.stringify({sector_id:sid,schedules:payload.schedules,enabled:payload.enabled}));toast('Setor '+sid+' salvo!');}
+function saveSector(){
+  var sid=currentSectorId;if(!sid)return;
+  var payload={cmd:'set_sector',sector:sid,name:document.getElementById('cfg-name').value.trim(),duration_min:parseInt(document.getElementById('cfg-duration-min').value)||0,duration_sec:parseInt(document.getElementById('cfg-duration-sec').value)||0,enabled:document.getElementById('cfg-toggle').classList.contains('on'),schedules:cfgSchedules[sid]||[]};
+  publish(payload);
+  client.publish('irrigation/schedule',JSON.stringify({sector_id:sid,schedules:payload.schedules,enabled:payload.enabled}));
+  toast('✅ Setor '+sid+' salvo!');
+}
 
-function fillNow(){var n=new Date();document.getElementById('rtc-day').value=n.getDate();document.getElementById('rtc-month').value=n.getMonth()+1;document.getElementById('rtc-year').value=n.getFullYear();document.getElementById('rtc-hour').value=n.getHours();document.getElementById('rtc-min').value=n.getMinutes();document.getElementById('rtc-sec').value=n.getSeconds();toast('Horario do celular preenchido!');}
-function sendRTC(){var d={cmd:'set_rtc',day:parseInt(document.getElementById('rtc-day').value),month:parseInt(document.getElementById('rtc-month').value),year:parseInt(document.getElementById('rtc-year').value),hour:parseInt(document.getElementById('rtc-hour').value),min:parseInt(document.getElementById('rtc-min').value),sec:parseInt(document.getElementById('rtc-sec').value)};if(isNaN(d.day)||isNaN(d.hour)){toast('Preencha todos os campos!');return;}publish(d);toast('Horario enviado para ESP32!');}
-function stopAll(){publish({cmd:'stop_all'});toast('Parada de emergencia enviada!');}
+function fillNow(){var n=new Date();document.getElementById('rtc-day').value=n.getDate();document.getElementById('rtc-month').value=n.getMonth()+1;document.getElementById('rtc-year').value=n.getFullYear();document.getElementById('rtc-hour').value=n.getHours();document.getElementById('rtc-min').value=n.getMinutes();document.getElementById('rtc-sec').value=n.getSeconds();toast('📱 Horário do celular preenchido!');}
+function sendRTC(){
+  var d={cmd:'set_rtc',day:parseInt(document.getElementById('rtc-day').value),month:parseInt(document.getElementById('rtc-month').value),year:parseInt(document.getElementById('rtc-year').value),hour:parseInt(document.getElementById('rtc-hour').value),min:parseInt(document.getElementById('rtc-min').value),sec:parseInt(document.getElementById('rtc-sec').value)};
+  if(isNaN(d.day)||isNaN(d.hour)){toast('⚠ Preencha todos os campos!');return;}
+  publish(d);toast('⏰ Horário enviado para ESP32!');
+}
 
-function renderFertiSetores(){var sectors=state.sectors||[];if(!sectors.length)return;document.getElementById('ferti-setor-config').innerHTML=sectors.map(function(sec){return '<div class="sector-row"><span class="sector-name">'+(sec.name||'Setor '+sec.id)+'</span><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px" onchange="setFertiPar('+sec.id+',this.value)">'+['A','B','C'].map(function(p){return '<option value="'+p+'"'+(fertiSetores[sec.id]===p?' selected':'')+'>Par '+p+'</option>';}).join('')+'</select></div>';}).join('');}
+function stopAll(){publish({cmd:'stop_all'});toast('⛔ Parada de emergência enviada!');}
+function forcarReconfig(){publish({cmd:'reset_wifi'});toast('Comando enviado! Controlador entrará em modo portal.');}
+
+function renderFertiSetores(){
+  var sectors=state.sectors||[];if(!sectors.length)return;
+  document.getElementById('ferti-setor-config').innerHTML=sectors.map(function(sec){return '<div class="sector-row"><span class="sector-name">'+(sec.name||'Setor '+sec.id)+'</span><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px" onchange="setFertiPar('+sec.id+',this.value)">'+['A','B','C'].map(function(p){return '<option value="'+p+'"'+(fertiSetores[sec.id]===p?' selected':'')+'>Par '+p+'</option>';}).join('')+'</select></div>';}).join('');
+}
 function setFertiPar(sid,par){fertiSetores[sid]=par;publishFerti({cmd:'set_ferti_setor',sector:sid,par:par});}
-function loadFertiCurva(){var par=document.getElementById('ferti-par-select').value,curva=fertiCurvas[par]||[],el=document.getElementById('ferti-curva-list');if(!curva.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);margin:6px 0">Nenhum horario configurado</div>';return;}el.innerHTML=curva.map(function(item,idx){return '<div class="sector-row"><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue);width:55px">'+item.hora+'</span><span style="font-size:13px;flex:1">EC: '+item.ec+' mS/cm</span><button class="btn-off" style="padding:4px 10px;font-size:12px" onclick="removeFertiCurva(\''+par+'\','+idx+')">×</button></div>';}).join('');}
-function addFertiCurva(){var par=document.getElementById('ferti-par-select').value,hora=document.getElementById('ferti-hora').value.trim(),ec=parseFloat(document.getElementById('ferti-ec-val').value);if(!/^\d{2}:\d{2}$/.test(hora)){toast('Formato invalido!');return;}if(isNaN(ec)||ec<0||ec>10){toast('EC invalido!');return;}fertiCurvas[par].push({hora:hora,ec:ec});fertiCurvas[par].sort(function(a,b){return a.hora.localeCompare(b.hora);});document.getElementById('ferti-hora').value='';document.getElementById('ferti-ec-val').value='';loadFertiCurva();}
+function loadFertiCurva(){
+  var par=document.getElementById('ferti-par-select').value,curva=fertiCurvas[par]||[],el=document.getElementById('ferti-curva-list');
+  if(!curva.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);margin:6px 0">Nenhum horário configurado</div>';return;}
+  el.innerHTML=curva.map(function(item,idx){return '<div class="sector-row"><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue);width:55px">'+item.hora+'</span><span style="font-size:13px;flex:1">EC: '+item.ec+' mS/cm</span><button class="btn-off" style="padding:4px 10px;font-size:12px" onclick="removeFertiCurva(\''+par+'\','+idx+')">×</button></div>';}).join('');
+}
+function addFertiCurva(){
+  var par=document.getElementById('ferti-par-select').value,hora=document.getElementById('ferti-hora').value.trim(),ec=parseFloat(document.getElementById('ferti-ec-val').value);
+  if(!/^\d{2}:\d{2}$/.test(hora)){toast('Formato inválido!');return;}
+  if(isNaN(ec)||ec<0||ec>10){toast('EC inválido!');return;}
+  fertiCurvas[par].push({hora:hora,ec:ec});fertiCurvas[par].sort(function(a,b){return a.hora.localeCompare(b.hora);});
+  document.getElementById('ferti-hora').value='';document.getElementById('ferti-ec-val').value='';loadFertiCurva();
+}
 function removeFertiCurva(par,idx){fertiCurvas[par].splice(idx,1);loadFertiCurva();}
-function saveFertiCurva(){var par=document.getElementById('ferti-par-select').value;publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});toast('Curva Par '+par+' salva!');}
+function saveFertiCurva(){var par=document.getElementById('ferti-par-select').value;publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});toast('Curva salva!');}
 function fertiManual(par,action){publishFerti({cmd:'ferti_manual',par:par,action:action});toast('Par '+par+' '+(action==='on'?'ligado':'desligado'));}
 
 init();
 </script>
 </body>
 </html>
+Migra para Mosquitto local com WSS TLS na porta 8884
