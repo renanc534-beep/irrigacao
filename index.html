@@ -209,7 +209,7 @@ select.cfg-input{cursor:pointer}
     <div class="card">
       <div class="card-title">Configurar / reconfigurar WiFi do controlador</div>
       <div class="info-box">
-        <strong>Primeiro uso:</strong> ao ligar o controlador, ele cria a rede WiFi <strong>Irrigacao-esp32_irrigacao</strong>.<br><br>
+        <strong>Primeiro uso:</strong> ao ligar o controlador, ele cria a rede WiFi <strong>Irrigacao-esp32_lavoura01</strong>.<br><br>
         1. Conecte o celular nessa rede (senha: <strong>irrigacao123</strong>)<br>
         2. Abra o navegador em <strong>192.168.4.1</strong><br>
         3. Preencha o nome e senha do WiFi da lavoura<br>
@@ -241,15 +241,16 @@ select.cfg-input{cursor:pointer}
       <label class="cfg-label">Usuário</label>
       <input class="cfg-input" id="inp-user" value="webapp">
       <label class="cfg-label">Senha</label>
-      <input class="cfg-input" id="inp-pass" type="password" value="irrigacao123">
+      <input class="cfg-input" id="inp-pass" type="password" value="J7M1SCGleejEIDkF">
       <button class="conn-btn" onclick="reconnect()">Conectar / Reconectar</button>
     </div>
     <div class="card">
       <div class="card-title">Tópicos MQTT</div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:2">
-        irrigation/status <span style="color:var(--green)">(retain)</span><br>
-        irrigation/command<br>
-        irrigation/schedule <span style="color:var(--green)">(retain)</span><br>
+        esp32_lavoura01/irrigation/status <span style="color:var(--green)">(retain)</span><br>
+        esp32_lavoura01/irrigation/command<br>
+        esp32_lavoura01/irrigation/schedule <span style="color:var(--green)">(retain)</span><br>
+        esp32_lavoura01/irrigation/online <span style="color:var(--green)">(retain · LWT)</span><br>
         fertigacao/status <span style="color:var(--green)">(retain)</span><br>
         fertigacao/command<br>
         estacao/dados<br>
@@ -307,8 +308,9 @@ function connect(){
   client=mqtt.connect(proto+broker+':'+port+'/mqtt',{username:user,password:pass,clientId:'irrig_app_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,keepalive:30});
   client.on('connect',function(){
     document.getElementById('conn-dot').classList.add('on');
-    client.subscribe('irrigation/status');
-    client.subscribe('irrigation/schedule');
+    client.subscribe('esp32_lavoura01/irrigation/status');
+    client.subscribe('esp32_lavoura01/irrigation/schedule');
+    client.subscribe('esp32_lavoura01/irrigation/online');
     client.subscribe('fertigacao/status');
     toast('✅ Conectado!');
   });
@@ -320,15 +322,18 @@ function connect(){
   });
   client.on('message',function(t,msg){
     try{var d=JSON.parse(msg.toString());
-      if(t==='irrigation/status')onStatus(d);
-      if(t==='irrigation/schedule')onSchedule(d);
+      if(t==='esp32_lavoura01/irrigation/status')onStatus(d);
+      if(t==='esp32_lavoura01/irrigation/schedule')onSchedule(d);
       if(t==='fertigacao/status')onFertiStatus(d);
-    }catch(e){}
+    }catch(e){
+      // tópico online chega como string simples, não JSON
+      if(t==='esp32_lavoura01/irrigation/online')onEspOnline(msg.toString());
+    }
   });
 }
 
 function reconnect(){connect();toast('Reconectando...');}
-function publish(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('irrigation/command',JSON.stringify(obj));}
+function publish(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('esp32_lavoura01/irrigation/command',JSON.stringify(obj));}
 function publishFerti(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('fertigacao/command',JSON.stringify(obj));}
 
 function onStatus(data){
@@ -439,7 +444,7 @@ function saveSector(){
   var sid=currentSectorId;if(!sid)return;
   var payload={cmd:'set_sector',sector:sid,name:document.getElementById('cfg-name').value.trim(),duration_min:parseInt(document.getElementById('cfg-duration-min').value)||0,duration_sec:parseInt(document.getElementById('cfg-duration-sec').value)||0,enabled:document.getElementById('cfg-toggle').classList.contains('on'),schedules:cfgSchedules[sid]||[]};
   publish(payload);
-  client.publish('irrigation/schedule',JSON.stringify({sector_id:sid,schedules:payload.schedules,enabled:payload.enabled}));
+  client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:sid,schedules:payload.schedules,enabled:payload.enabled}));
   toast('✅ Setor '+sid+' salvo!');
 }
 
@@ -473,6 +478,11 @@ function addFertiCurva(){
 function removeFertiCurva(par,idx){fertiCurvas[par].splice(idx,1);loadFertiCurva();}
 function saveFertiCurva(){var par=document.getElementById('ferti-par-select').value;publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});toast('Curva salva!');}
 function fertiManual(par,action){publishFerti({cmd:'ferti_manual',par:par,action:action});toast('Par '+par+' '+(action==='on'?'ligado':'desligado'));}
+
+function onEspOnline(val){
+  if(val==='0'){toast('⚠️ Controlador offline!');}
+  else{toast('✅ Controlador online!');}
+}
 
 init();
 </script>
