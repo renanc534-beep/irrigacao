@@ -226,23 +226,18 @@ select.cfg-input{cursor:pointer}
 
   <div id="tab-conn" style="display:none">
     <div class="card">
-      <div class="card-title">⚠️ Primeira conexão</div>
+      <div class="card-title">✅ Conexão pública</div>
       <div class="info-box" style="line-height:1.7">
-        Como o broker usa <strong>certificado TLS auto-assinado</strong>, na primeira vez (por dispositivo) você precisa aceitar o certificado:<br><br>
-        1. Abra no navegador: <strong id="cert-url">https://100.104.61.123:8884</strong><br>
-        2. Aparece aviso de "conexão não privada"<br>
-        3. Toque em <strong>Avançado</strong> → <strong>Continuar mesmo assim</strong><br>
-        4. Pode aparecer erro/conexão fechada — é normal<br>
-        5. Volte para esta aba e toque em "Conectar"<br><br>
-        Depois disso, a conexão WSS funciona normalmente.
+        O broker está acessível publicamente via <strong>Tailscale Funnel</strong> com certificado válido (Let's Encrypt). Sem necessidade de VPN ou instalação de certificado em cada dispositivo.<br><br>
+        Basta abrir esta página em qualquer navegador (PC ou celular) e tocar em <strong>Conectar</strong>.
       </div>
     </div>
     <div class="card">
       <div class="card-title">Servidor MQTT</div>
-      <label class="cfg-label">Broker (IP do Raspberry Pi)</label>
-      <input class="cfg-input" id="inp-broker" placeholder="100.xxx.xxx.xxx" value="100.104.61.123">
+      <label class="cfg-label">Broker (hostname público)</label>
+      <input class="cfg-input" id="inp-broker" placeholder="raspberrypi.tailXXX.ts.net" value="raspberrypi.taileb9ced.ts.net">
       <label class="cfg-label">Porta WebSocket TLS</label>
-      <input class="cfg-input" id="inp-port" value="8884" type="number">
+      <input class="cfg-input" id="inp-port" value="443" type="number">
       <label class="cfg-label">Usuário</label>
       <input class="cfg-input" id="inp-user" value="webapp">
       <label class="cfg-label">Senha</label>
@@ -282,13 +277,8 @@ function init(){
   if(saved.port)document.getElementById('inp-port').value=saved.port;
   if(saved.user)document.getElementById('inp-user').value=saved.user;
   if(saved.pass)document.getElementById('inp-pass').value=saved.pass;
-  // Atualiza link do certificado com broker atual
-  var broker=document.getElementById('inp-broker').value;
-  var port=document.getElementById('inp-port').value;
-  var certEl=document.getElementById('cert-url');
-  if(certEl&&broker)certEl.textContent='https://'+broker+':'+port;
   renderHistory();
-  if(saved.broker||document.getElementById('inp-broker').value)connect();
+  if(document.getElementById('inp-broker').value)connect();
 }
 
 function showTab(name,el){
@@ -311,12 +301,9 @@ function connect(){
   if(!broker){toast('Preencha o broker!');return;}
   // Salva config
   localStorage.setItem('mqtt_cfg',JSON.stringify({broker:broker,port:port,user:user,pass:pass}));
-  // Atualiza URL exibida na aba de conexao
-  var certEl=document.getElementById('cert-url');
-  if(certEl)certEl.textContent='https://'+broker+':'+port;
   if(client){try{client.end(true);}catch(e){}}
-  // Porta 8884 = WSS (TLS), demais portas = WS
-  var proto=(port===8884||location.protocol==='https:')?'wss://':'ws://';
+  // Porta 443/8884 = WSS (TLS), demais portas = WS
+  var proto=(port===8884||port===443||location.protocol==='https:')?'wss://':'ws://';
   client=mqtt.connect(proto+broker+':'+port+'/mqtt',{username:user,password:pass,clientId:'irrig_app_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,keepalive:30});
   client.on('connect',function(){
     document.getElementById('conn-dot').classList.add('on');
@@ -491,4 +478,3 @@ init();
 </script>
 </body>
 </html>
-Migra para Mosquitto local com WSS TLS na porta 8884
