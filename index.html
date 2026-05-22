@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Irrigação — Morango</title>
+<title>Irrigação — Morango v1.1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -61,7 +61,7 @@ select.cfg-input{cursor:pointer}
 .sched-tag{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;font-family:var(--mono);display:flex;align-items:center;gap:6px}
 .sched-tag-x{color:var(--muted);cursor:pointer;font-size:16px;line-height:1}
 .sched-input{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
-.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background .2s}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
 .toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:white;top:3px;left:3px;transition:left .2s}
 .toggle.on{background:var(--green)}
 .toggle.on::after{left:23px}
@@ -73,13 +73,61 @@ select.cfg-input{cursor:pointer}
 .conn-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;margin-top:14px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
 .toast.show{opacity:1}
+
+/* ===== v1.1: Config — cards expansíveis ===== */
+.cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+.cfg-card.expanded{border-color:var(--green)}
+.cfg-head{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
+.cfg-head-info{flex:1;min-width:0}
+.cfg-head-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cfg-head-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.cfg-chev{color:var(--muted);font-size:14px;transition:transform .2s}
+.cfg-card.expanded .cfg-chev{transform:rotate(180deg)}
+.cfg-body{padding:0 14px 14px 14px;border-top:1px solid var(--border)}
+.cfg-body-pad{padding-top:14px}
+
+/* ===== v1.1: Manual — card grande tipo toggle ===== */
+.man-card{display:flex;align-items:center;gap:14px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;cursor:pointer;transition:all .15s}
+.man-card.active{background:linear-gradient(135deg,rgba(0,229,160,.18),rgba(0,184,125,.06));border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+.man-num{width:48px;height:48px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:var(--mono);color:var(--muted);flex-shrink:0}
+.man-card.active .man-num{background:var(--green);color:#000}
+.man-info{flex:1;min-width:0}
+.man-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.man-state{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-top:3px}
+.man-card.active .man-state{color:var(--green)}
+.man-icon{font-size:22px;color:var(--muted)}
+.man-card.active .man-icon{color:var(--green)}
+
+/* ===== v1.1: Modal (copy + multi-zonas) ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-sheet{background:var(--surface);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:18px 16px;max-height:85vh;overflow-y:auto;border-top:1px solid var(--border)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-title{font-size:15px;font-weight:800}
+.modal-close{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:0 4px;line-height:1}
+.modal-step-label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px}
+
+/* ===== v1.1: Multi-select de setores (grade tipo INKBIRD) ===== */
+.sec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.sec-cell{aspect-ratio:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;font-family:var(--mono);color:var(--muted);cursor:pointer;transition:all .15s}
+.sec-cell.on{background:var(--green);color:#000;border-color:var(--green)}
+.sec-cell.disabled{opacity:.3;cursor:not-allowed}
+
+/* ===== v1.1: Curva EC — tag de intervalo ===== */
+.ec-interval{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ec-interval:last-child{border-bottom:none}
+.ec-time{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue)}
+.ec-arrow{color:var(--muted);font-size:12px}
+.ec-val{font-size:13px;font-weight:700;color:var(--green);flex:1;text-align:right;font-family:var(--mono)}
+
+.version-tag{font-size:9px;color:var(--muted);font-family:var(--mono);background:var(--surface2);padding:2px 6px;border-radius:6px;margin-left:6px}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação</div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.1</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -113,41 +161,18 @@ select.cfg-input{cursor:pointer}
     <div class="card"><div class="card-title">Horário do sistema</div><div id="st-datetime" style="font-family:var(--mono);font-size:14px;color:var(--muted)">—</div></div>
   </div>
 
+  <!-- v1.1: aba Manual — card grande por setor + Multi-zonas -->
   <div id="tab-manual" style="display:none">
-    <div class="card"><div class="card-title">Controle manual</div><div id="manual-sectors"><div style="color:var(--muted);font-size:13px">Aguardando dados...</div></div></div>
+    <div id="manual-sectors"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div></div>
+    <button class="save-btn" style="margin-top:8px" onclick="openMultiZonas()">🌊 Multi-zonas</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5">Toque em um setor para liga/desliga rápido<br>Use Multi-zonas para irrigar vários em sequência</div>
   </div>
 
+  <!-- v1.1: aba Configurar — lista de cards expansíveis + Copiar -->
   <div id="tab-config" style="display:none">
-    <div class="card"><div class="card-title">Setor</div><select class="cfg-input" id="cfg-sector-sel" onchange="loadSector()"><option value="0">Selecione...</option></select></div>
-    <div id="cfg-sector-form" style="display:none">
-      <div class="card">
-        <div class="card-title">Nome e duração</div>
-        <label class="cfg-label">Nome do setor</label>
-        <input class="cfg-input" id="cfg-name" placeholder="Ex: Lavoura 1 — Sul">
-        <label class="cfg-label">Duração</label>
-        <div style="display:flex;gap:8px">
-          <div style="flex:1">
-            <input class="cfg-input" id="cfg-duration-min" type="number" min="0" max="120" value="15">
-            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">minutos</div>
-          </div>
-          <div style="flex:1">
-            <input class="cfg-input" id="cfg-duration-sec" type="number" min="0" max="59" value="0">
-            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">segundos</div>
-          </div>
-        </div>
-        <label class="cfg-label" style="margin-top:14px">Ativo</label>
-        <button class="toggle on" id="cfg-toggle" onclick="toggleEnabled()"></button>
-      </div>
-      <div class="card">
-        <div class="card-title">Horários automáticos</div>
-        <div class="sched-tags" id="cfg-sched-tags"></div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <input class="sched-input" id="cfg-sched-input" type="text" placeholder="HH:MM" style="width:90px">
-          <button class="btn-add" onclick="addSchedule()">+ Adicionar</button>
-        </div>
-      </div>
-      <button class="save-btn" onclick="saveSector()">Salvar configurações</button>
-    </div>
+    <div id="cfg-sectors-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div></div>
+    <button class="save-btn" style="margin-top:8px" onclick="openCopyModal()">📋 Copiar configurações</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5">Toque no setor para expandir e editar<br>Toggle liga/desliga a programação imediatamente</div>
   </div>
 
   <div id="tab-historico" style="display:none">
@@ -190,11 +215,16 @@ select.cfg-input{cursor:pointer}
     <div class="card">
       <div class="card-title">Curva EC — <select id="ferti-par-select" onchange="loadFertiCurva()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700"><option value="A">Par A</option><option value="B">Par B</option><option value="C">Par C</option></select></div>
       <div id="ferti-curva-list"></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input class="sched-input" id="ferti-hora" placeholder="HH:MM" style="width:85px">
-        <input class="sched-input" id="ferti-ec-val" type="number" placeholder="EC" step="0.1" min="0" max="10" style="width:75px">
+      <!-- v1.1: intervalo (início → fim) em vez de ponto único -->
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.7px;margin-top:14px;margin-bottom:6px">Adicionar intervalo</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input class="sched-input" id="ferti-hora-inicio" placeholder="07:30" style="width:75px">
+        <span style="color:var(--muted);font-family:var(--mono)">→</span>
+        <input class="sched-input" id="ferti-hora-fim" placeholder="10:00" style="width:75px">
+        <input class="sched-input" id="ferti-ec-val" type="number" placeholder="EC" step="0.1" min="0" max="10" style="width:65px">
         <button class="btn-add" onclick="addFertiCurva()">+ Add</button>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">Fora dos intervalos: sem fertirrigação (EC=0)</div>
       <button class="save-btn" style="margin-top:10px" onclick="saveFertiCurva()">Salvar curva</button>
     </div>
     <div class="card">
@@ -260,19 +290,70 @@ select.cfg-input{cursor:pointer}
   </div>
 </div>
 
+<!-- v1.1: Modal Copiar configurações -->
+<div class="modal-overlay" id="copy-modal">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div class="modal-title" id="copy-modal-title">Copiar — escolha a origem</div>
+      <button class="modal-close" onclick="closeCopyModal()">×</button>
+    </div>
+    <div id="copy-step1">
+      <div class="modal-step-label">1. Setor que será COPIADO</div>
+      <div id="copy-source-list"></div>
+    </div>
+    <div id="copy-step2" style="display:none">
+      <div class="modal-step-label">2. Setores que vão RECEBER as configurações</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Origem: <span id="copy-source-label" style="color:var(--green);font-weight:700"></span></div>
+      <div class="sec-grid" id="copy-target-grid"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn-add" style="flex:1" onclick="copyBackToStep1()">← Voltar</button>
+        <button class="save-btn" style="flex:2" onclick="executeCopy()">Colar nos setores</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">Serão copiados: horários, duração e estado ativo/inativo.<br>Nome de cada setor é mantido.</div>
+    </div>
+  </div>
+</div>
+
+<!-- v1.1: Modal Multi-zonas -->
+<div class="modal-overlay" id="mz-modal">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div class="modal-title">Multi-zonas</div>
+      <button class="modal-close" onclick="closeMultiZonas()">×</button>
+    </div>
+    <div class="modal-step-label">1. Setores para irrigar (em sequência)</div>
+    <div class="sec-grid" id="mz-grid"></div>
+    <div class="modal-step-label" style="margin-top:8px">2. Tempo de cada setor</div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">
+        <input class="cfg-input" id="mz-min" type="number" min="0" max="120" value="5" style="text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">minutos</div>
+      </div>
+      <div style="flex:1">
+        <input class="cfg-input" id="mz-sec" type="number" min="0" max="59" value="0" style="text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">segundos</div>
+      </div>
+    </div>
+    <button class="save-btn" style="margin-top:14px" onclick="executeMultiZonas()">▶ Iniciar irrigação sequencial</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">Os setores selecionados irrigarão um por vez<br>na ordem crescente, cada um pelo tempo definido</div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 var client=null;
 var state={sectors:[],pump:false,current_sector:null,datetime:''};
-var cfgSchedules={},cfgEnabled={},currentSectorId=null;
+var cfgSchedules={},cfgEnabled={},cfgExpanded={};
 var fertiCurvas={A:[],B:[],C:[]},fertiSetores={};
 var irrigHistory=JSON.parse(localStorage.getItem('hist')||'[]');
 var timerInterval=null,timerStart=null,timerSector=null;
-for(var i=1;i<=6;i++){fertiSetores[i]='A';cfgSchedules[i]=[];cfgEnabled[i]=true;}
+// v1.1: estados dos modais
+var copySource=null,copyTargets={};
+var mzSelected={};
+for(var i=1;i<=6;i++){fertiSetores[i]='A';cfgSchedules[i]=[];cfgEnabled[i]=true;cfgExpanded[i]=false;}
 
 function init(){
-  // Carrega config MQTT salvo no localStorage
   var saved=JSON.parse(localStorage.getItem('mqtt_cfg')||'{}');
   if(saved.broker)document.getElementById('inp-broker').value=saved.broker;
   if(saved.port)document.getElementById('inp-port').value=saved.port;
@@ -286,7 +367,8 @@ function showTab(name,el){
   ['status','manual','config','historico','rtc','ferti','wifi','conn'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'':'none';});
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
   if(el)el.classList.add('active');
-  if(name==='config')renderConfigSelector();
+  if(name==='config')renderConfigSectors();
+  if(name==='manual')renderManualSectors();
   if(name==='historico')renderHistory();
   if(name==='ferti'){renderFertiSetores();loadFertiCurva();}
 }
@@ -300,10 +382,8 @@ function connect(){
   var user=document.getElementById('inp-user').value.trim();
   var pass=document.getElementById('inp-pass').value.trim();
   if(!broker){toast('Preencha o broker!');return;}
-  // Salva config
   localStorage.setItem('mqtt_cfg',JSON.stringify({broker:broker,port:port,user:user,pass:pass}));
   if(client){try{client.end(true);}catch(e){}}
-  // Porta 443/8884 = WSS (TLS), demais portas = WS
   var proto=(port===8884||port===443||location.protocol==='https:')?'wss://':'ws://';
   client=mqtt.connect(proto+broker+':'+port+'/mqtt',{username:user,password:pass,clientId:'irrig_app_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,keepalive:30});
   client.on('connect',function(){
@@ -326,7 +406,6 @@ function connect(){
       if(t==='esp32_lavoura01/irrigation/schedule')onSchedule(d);
       if(t==='fertigacao/status')onFertiStatus(d);
     }catch(e){
-      // tópico online chega como string simples, não JSON
       if(t==='esp32_lavoura01/irrigation/online')onEspOnline(msg.toString());
     }
   });
@@ -351,7 +430,10 @@ function onStatus(data){
     document.getElementById('rtc-current').textContent=p[1]||'—';
     document.getElementById('rtc-date').textContent=p[0]||'—';
   }
-  handleTimer(data);renderStatus();renderManual();renderConfigSelector();
+  handleTimer(data);
+  renderStatus();
+  renderManualSectors();
+  renderConfigSectors();
 }
 
 function onSchedule(data){
@@ -359,6 +441,7 @@ function onSchedule(data){
     cfgSchedules[data.sector_id]=data.schedules||[];
     cfgEnabled[data.sector_id]=data.enabled!==false;
     renderStatus();
+    renderConfigSectors();
   }
 }
 
@@ -399,54 +482,238 @@ function renderStatus(){
   }).join('');
 }
 
-function renderManual(){
+/* ===================================================================== */
+/*  v1.1 — Aba MANUAL: card grande tipo toggle + Multi-zonas              */
+/* ===================================================================== */
+
+function renderManualSectors(){
   var sectors=state.sectors||[],el=document.getElementById('manual-sectors');
-  if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados...</div>';return;}
-  el.innerHTML=sectors.map(function(sec){return '<div class="sector-row"><span class="sector-name" style="flex:1">'+(sec.name||'Setor '+sec.id)+'</span><button class="btn-on" onclick="publish({cmd:\'manual_on\',sector:'+sec.id+'})">Ligar</button><button class="btn-off" onclick="publish({cmd:\'manual_off\',sector:'+sec.id+'})">Desligar</button></div>';}).join('');
+  if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div>';return;}
+  el.innerHTML=sectors.map(function(sec){
+    var active=state.current_sector==sec.id&&state.pump;
+    return '<div class="man-card'+(active?' active':'')+'" onclick="toggleManualSector('+sec.id+')">'
+      +'<div class="man-num">'+sec.id+'</div>'
+      +'<div class="man-info"><div class="man-name">'+(sec.name||'Setor '+sec.id)+'</div><div class="man-state">'+(active?'● IRRIGANDO':'desligado')+'</div></div>'
+      +'<div class="man-icon">'+(active?'⏸':'▶')+'</div>'
+      +'</div>';
+  }).join('');
 }
 
-function renderConfigSelector(){
-  var sel=document.getElementById('cfg-sector-sel'),sectors=state.sectors||[];
-  if(!sectors.length)return;
-  var cur=sel.value;
-  sel.innerHTML='<option value="0">Selecione...</option>'+sectors.map(function(s){return '<option value="'+s.id+'"'+(s.id==cur?' selected':'')+'>'+(s.name||'Setor '+s.id)+'</option>';}).join('');
+function toggleManualSector(sid){
+  var active=state.current_sector==sid&&state.pump;
+  if(active){
+    publish({cmd:'manual_off',sector:sid});
+    toast('Setor '+sid+' desligado');
+  }else{
+    publish({cmd:'manual_on',sector:sid});
+    toast('Setor '+sid+' ligado');
+  }
 }
 
-function loadSector(){
-  var sid=parseInt(document.getElementById('cfg-sector-sel').value);
-  if(!sid){document.getElementById('cfg-sector-form').style.display='none';return;}
-  currentSectorId=sid;
+function openMultiZonas(){
+  var sectors=state.sectors||[];
+  if(!sectors.length){toast('Aguardando setores do controlador...');return;}
+  mzSelected={};
+  var grid=document.getElementById('mz-grid');
+  grid.innerHTML=sectors.map(function(sec){
+    return '<div class="sec-cell" data-sid="'+sec.id+'" onclick="toggleMzSector('+sec.id+')">'+sec.id+'</div>';
+  }).join('');
+  document.getElementById('mz-modal').classList.add('show');
+}
+function closeMultiZonas(){document.getElementById('mz-modal').classList.remove('show');}
+function toggleMzSector(sid){
+  mzSelected[sid]=!mzSelected[sid];
+  var cell=document.querySelector('#mz-grid .sec-cell[data-sid="'+sid+'"]');
+  if(cell)cell.classList.toggle('on',mzSelected[sid]);
+}
+function executeMultiZonas(){
+  var list=[];
+  for(var k in mzSelected)if(mzSelected[k])list.push(parseInt(k));
+  list.sort(function(a,b){return a-b;});
+  if(!list.length){toast('Selecione ao menos um setor!');return;}
+  var dmin=parseInt(document.getElementById('mz-min').value)||0;
+  var dsec=parseInt(document.getElementById('mz-sec').value)||0;
+  if(dmin===0&&dsec===0){toast('Tempo deve ser maior que zero!');return;}
+  publish({cmd:'multi_zone',sectors:list,duration_min:dmin,duration_sec:dsec});
+  toast('▶ Iniciando '+list.length+' setor(es) em sequência');
+  closeMultiZonas();
+}
+
+/* ===================================================================== */
+/*  v1.1 — Aba CONFIGURAR: cards expansíveis + Copiar                     */
+/* ===================================================================== */
+
+function renderConfigSectors(){
+  var sectors=state.sectors||[],el=document.getElementById('cfg-sectors-list');
+  if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div>';return;}
+  el.innerHTML=sectors.map(function(sec){
+    var sid=sec.id;
+    var enabled=cfgEnabled[sid]!==false&&sec.enabled!==false;
+    var scheds=cfgSchedules[sid]&&cfgSchedules[sid].length?cfgSchedules[sid]:(sec.schedules||[]);
+    var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
+    var dsec=sec.duration_sec||0;
+    var durStr=dmin+'min'+(dsec>0?' '+dsec+'s':'');
+    var expanded=cfgExpanded[sid];
+    var html='<div class="cfg-card'+(expanded?' expanded':'')+'" id="cfg-card-'+sid+'">';
+    html+='<div class="cfg-head" onclick="toggleCfgExpand('+sid+')">';
+    html+='<button class="toggle'+(enabled?' on':'')+'" onclick="event.stopPropagation();toggleSectorEnabled('+sid+')"></button>';
+    html+='<div class="cfg-head-info"><div class="cfg-head-name">'+(sec.name||'Setor '+sid)+'</div>';
+    html+='<div class="cfg-head-meta">'+durStr+' · '+(scheds.length?scheds.length+' horário'+(scheds.length>1?'s':''):'sem horário')+'</div></div>';
+    html+='<div class="cfg-chev">▼</div></div>';
+    if(expanded){
+      html+='<div class="cfg-body"><div class="cfg-body-pad">';
+      html+='<label class="cfg-label">Nome</label>';
+      html+='<input class="cfg-input" id="cfg-name-'+sid+'" value="'+escapeAttr(sec.name||'')+'" placeholder="Ex: Lavoura 1">';
+      html+='<label class="cfg-label">Duração</label><div style="display:flex;gap:8px">';
+      html+='<div style="flex:1"><input class="cfg-input" id="cfg-dmin-'+sid+'" type="number" min="0" max="120" value="'+dmin+'" style="text-align:center"><div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">minutos</div></div>';
+      html+='<div style="flex:1"><input class="cfg-input" id="cfg-dsec-'+sid+'" type="number" min="0" max="59" value="'+dsec+'" style="text-align:center"><div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">segundos</div></div>';
+      html+='</div>';
+      html+='<label class="cfg-label">Horários</label>';
+      html+='<div class="sched-tags" id="cfg-tags-'+sid+'">'+scheds.map(function(t){return '<div class="sched-tag">'+t+'<span class="sched-tag-x" onclick="removeScheduleInline('+sid+',\''+t+'\')">×</span></div>';}).join('')+'</div>';
+      html+='<div style="display:flex;gap:8px;margin-top:4px"><input class="sched-input" id="cfg-newhora-'+sid+'" type="text" placeholder="HH:MM" style="width:100px"><button class="btn-add" onclick="addScheduleInline('+sid+')">+ Adicionar</button></div>';
+      html+='<button class="save-btn" style="margin-top:14px" onclick="saveSectorInline('+sid+')">Salvar setor '+sid+'</button>';
+      html+='</div></div>';
+    }
+    html+='</div>';
+    return html;
+  }).join('');
+}
+
+function escapeAttr(s){return String(s).replace(/"/g,'&quot;');}
+
+function toggleCfgExpand(sid){
+  // Fecha todos os outros (acordeão)
+  for(var k in cfgExpanded)if(parseInt(k)!==sid)cfgExpanded[k]=false;
+  cfgExpanded[sid]=!cfgExpanded[sid];
+  renderConfigSectors();
+}
+
+function toggleSectorEnabled(sid){
   var sec=(state.sectors||[]).find(function(s){return s.id===sid;})||{};
-  document.getElementById('cfg-name').value=sec.name||'';
-  document.getElementById('cfg-duration-min').value=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
-  document.getElementById('cfg-duration-sec').value=sec.duration_sec||0;
-  var enabled=cfgEnabled[sid]!==false&&sec.enabled!==false;
-  document.getElementById('cfg-toggle').className='toggle'+(enabled?' on':'');
-  cfgSchedules[sid]=cfgSchedules[sid]||sec.schedules||[];
-  renderScheduleTags();
-  document.getElementById('cfg-sector-form').style.display='';
+  var current=cfgEnabled[sid]!==false&&sec.enabled!==false;
+  var newEnabled=!current;
+  cfgEnabled[sid]=newEnabled;
+  // Envia comando imediato (sem precisar salvar)
+  publish({cmd:'set_sector',sector:sid,enabled:newEnabled});
+  if(client&&client.connected){
+    client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:sid,schedules:cfgSchedules[sid]||sec.schedules||[],enabled:newEnabled}),{retain:true});
+  }
+  toast('Setor '+sid+(newEnabled?' ATIVADO':' DESATIVADO'));
+  renderConfigSectors();
+  renderStatus();
 }
 
-function renderScheduleTags(){
-  var sid=currentSectorId;if(!sid)return;
-  document.getElementById('cfg-sched-tags').innerHTML=(cfgSchedules[sid]||[]).map(function(t){return '<div class="sched-tag">'+t+'<span class="sched-tag-x" onclick="removeSchedule(\''+t+'\')">×</span></div>';}).join('');
-}
-function addSchedule(){
-  var val=document.getElementById('cfg-sched-input').value.trim();
+function addScheduleInline(sid){
+  var inp=document.getElementById('cfg-newhora-'+sid);
+  var val=inp.value.trim();
   if(!/^\d{2}:\d{2}$/.test(val)){toast('Formato inválido! Use HH:MM');return;}
-  if(!cfgSchedules[currentSectorId])cfgSchedules[currentSectorId]=[];
-  if(!cfgSchedules[currentSectorId].includes(val)){cfgSchedules[currentSectorId].push(val);cfgSchedules[currentSectorId].sort();}
-  document.getElementById('cfg-sched-input').value='';renderScheduleTags();
+  if(!cfgSchedules[sid])cfgSchedules[sid]=[];
+  if(cfgSchedules[sid].indexOf(val)===-1){cfgSchedules[sid].push(val);cfgSchedules[sid].sort();}
+  inp.value='';
+  // Re-render apenas as tags
+  var tagsEl=document.getElementById('cfg-tags-'+sid);
+  if(tagsEl){tagsEl.innerHTML=cfgSchedules[sid].map(function(t){return '<div class="sched-tag">'+t+'<span class="sched-tag-x" onclick="removeScheduleInline('+sid+',\''+t+'\')">×</span></div>';}).join('');}
 }
-function removeSchedule(t){cfgSchedules[currentSectorId]=(cfgSchedules[currentSectorId]||[]).filter(function(x){return x!==t;});renderScheduleTags();}
-function toggleEnabled(){var tog=document.getElementById('cfg-toggle');tog.classList.toggle('on');if(currentSectorId)cfgEnabled[currentSectorId]=tog.classList.contains('on');}
-function saveSector(){
-  var sid=currentSectorId;if(!sid)return;
-  var payload={cmd:'set_sector',sector:sid,name:document.getElementById('cfg-name').value.trim(),duration_min:parseInt(document.getElementById('cfg-duration-min').value)||0,duration_sec:parseInt(document.getElementById('cfg-duration-sec').value)||0,enabled:document.getElementById('cfg-toggle').classList.contains('on'),schedules:cfgSchedules[sid]||[]};
-  publish(payload);
-  client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:sid,schedules:payload.schedules,enabled:payload.enabled}));
+
+function removeScheduleInline(sid,t){
+  cfgSchedules[sid]=(cfgSchedules[sid]||[]).filter(function(x){return x!==t;});
+  var tagsEl=document.getElementById('cfg-tags-'+sid);
+  if(tagsEl){tagsEl.innerHTML=cfgSchedules[sid].map(function(t2){return '<div class="sched-tag">'+t2+'<span class="sched-tag-x" onclick="removeScheduleInline('+sid+',\''+t2+'\')">×</span></div>';}).join('');}
+}
+
+function saveSectorInline(sid){
+  var name=document.getElementById('cfg-name-'+sid).value.trim();
+  var dmin=parseInt(document.getElementById('cfg-dmin-'+sid).value)||0;
+  var dsec=parseInt(document.getElementById('cfg-dsec-'+sid).value)||0;
+  var enabled=cfgEnabled[sid]!==false;
+  var scheds=cfgSchedules[sid]||[];
+  publish({cmd:'set_sector',sector:sid,name:name,duration_min:dmin,duration_sec:dsec,enabled:enabled,schedules:scheds});
+  if(client&&client.connected){
+    client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:sid,schedules:scheds,enabled:enabled}),{retain:true});
+  }
   toast('✅ Setor '+sid+' salvo!');
 }
+
+/* ----- Copiar configurações (modal) ----- */
+
+function openCopyModal(){
+  var sectors=state.sectors||[];
+  if(!sectors.length){toast('Aguardando setores do controlador...');return;}
+  copySource=null;copyTargets={};
+  document.getElementById('copy-step1').style.display='';
+  document.getElementById('copy-step2').style.display='none';
+  document.getElementById('copy-modal-title').textContent='Copiar — escolha a origem';
+  var listEl=document.getElementById('copy-source-list');
+  listEl.innerHTML=sectors.map(function(sec){
+    var scheds=cfgSchedules[sec.id]&&cfgSchedules[sec.id].length?cfgSchedules[sec.id]:(sec.schedules||[]);
+    var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
+    var dsec=sec.duration_sec||0;
+    return '<div class="cfg-card" style="cursor:pointer" onclick="selectCopySource('+sec.id+')">'
+      +'<div class="cfg-head"><div class="man-num">'+sec.id+'</div>'
+      +'<div class="cfg-head-info"><div class="cfg-head-name">'+(sec.name||'Setor '+sec.id)+'</div>'
+      +'<div class="cfg-head-meta">'+dmin+'min'+(dsec>0?' '+dsec+'s':'')+' · '+scheds.length+' horário(s)</div></div>'
+      +'<div style="color:var(--green);font-size:18px">→</div></div></div>';
+  }).join('');
+  document.getElementById('copy-modal').classList.add('show');
+}
+
+function closeCopyModal(){document.getElementById('copy-modal').classList.remove('show');}
+
+function selectCopySource(sid){
+  copySource=sid;
+  var sec=(state.sectors||[]).find(function(s){return s.id===sid;})||{};
+  document.getElementById('copy-source-label').textContent=(sec.name||'Setor '+sid);
+  document.getElementById('copy-modal-title').textContent='Copiar — escolha os destinos';
+  document.getElementById('copy-step1').style.display='none';
+  document.getElementById('copy-step2').style.display='';
+  var sectors=state.sectors||[];
+  var grid=document.getElementById('copy-target-grid');
+  grid.innerHTML=sectors.map(function(s){
+    var isSource=s.id===sid;
+    return '<div class="sec-cell'+(isSource?' disabled':'')+'" data-sid="'+s.id+'" onclick="'+(isSource?'':'toggleCopyTarget('+s.id+')')+'">'+s.id+'</div>';
+  }).join('');
+}
+
+function copyBackToStep1(){
+  document.getElementById('copy-step1').style.display='';
+  document.getElementById('copy-step2').style.display='none';
+  document.getElementById('copy-modal-title').textContent='Copiar — escolha a origem';
+}
+
+function toggleCopyTarget(sid){
+  if(sid===copySource)return;
+  copyTargets[sid]=!copyTargets[sid];
+  var cell=document.querySelector('#copy-target-grid .sec-cell[data-sid="'+sid+'"]');
+  if(cell)cell.classList.toggle('on',copyTargets[sid]);
+}
+
+function executeCopy(){
+  var targets=[];
+  for(var k in copyTargets)if(copyTargets[k])targets.push(parseInt(k));
+  if(!targets.length){toast('Selecione ao menos 1 setor de destino!');return;}
+  var src=(state.sectors||[]).find(function(s){return s.id===copySource;})||{};
+  var srcSchedules=cfgSchedules[copySource]&&cfgSchedules[copySource].length?cfgSchedules[copySource]:(src.schedules||[]);
+  var srcDmin=src.duration_min!==undefined?src.duration_min:(src.duration||15);
+  var srcDsec=src.duration_sec||0;
+  var srcEnabled=cfgEnabled[copySource]!==false&&src.enabled!==false;
+  // Aplica em cada destino (mantém o nome de cada um)
+  targets.forEach(function(tid){
+    var tgt=(state.sectors||[]).find(function(s){return s.id===tid;})||{};
+    cfgSchedules[tid]=srcSchedules.slice();
+    cfgEnabled[tid]=srcEnabled;
+    publish({cmd:'set_sector',sector:tid,name:(tgt.name||'Setor '+tid),duration_min:srcDmin,duration_sec:srcDsec,enabled:srcEnabled,schedules:srcSchedules});
+    if(client&&client.connected){
+      client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:tid,schedules:srcSchedules,enabled:srcEnabled}),{retain:true});
+    }
+  });
+  toast('✅ Configurações copiadas para '+targets.length+' setor(es)');
+  closeCopyModal();
+  renderConfigSectors();
+}
+
+/* ===================================================================== */
+/*  Aba RTC                                                                */
+/* ===================================================================== */
 
 function fillNow(){var n=new Date();document.getElementById('rtc-day').value=n.getDate();document.getElementById('rtc-month').value=n.getMonth()+1;document.getElementById('rtc-year').value=n.getFullYear();document.getElementById('rtc-hour').value=n.getHours();document.getElementById('rtc-min').value=n.getMinutes();document.getElementById('rtc-sec').value=n.getSeconds();toast('📱 Horário do celular preenchido!');}
 function sendRTC(){
@@ -458,25 +725,50 @@ function sendRTC(){
 function stopAll(){publish({cmd:'stop_all'});toast('⛔ Parada de emergência enviada!');}
 function forcarReconfig(){publish({cmd:'reset_wifi'});toast('Comando enviado! Controlador entrará em modo portal.');}
 
+/* ===================================================================== */
+/*  Aba FERTI — curva EC por intervalo (v1.1)                              */
+/* ===================================================================== */
+
 function renderFertiSetores(){
   var sectors=state.sectors||[];if(!sectors.length)return;
   document.getElementById('ferti-setor-config').innerHTML=sectors.map(function(sec){return '<div class="sector-row"><span class="sector-name">'+(sec.name||'Setor '+sec.id)+'</span><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px" onchange="setFertiPar('+sec.id+',this.value)">'+['A','B','C'].map(function(p){return '<option value="'+p+'"'+(fertiSetores[sec.id]===p?' selected':'')+'>Par '+p+'</option>';}).join('')+'</select></div>';}).join('');
 }
 function setFertiPar(sid,par){fertiSetores[sid]=par;publishFerti({cmd:'set_ferti_setor',sector:sid,par:par});}
+
 function loadFertiCurva(){
   var par=document.getElementById('ferti-par-select').value,curva=fertiCurvas[par]||[],el=document.getElementById('ferti-curva-list');
-  if(!curva.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);margin:6px 0">Nenhum horário configurado</div>';return;}
-  el.innerHTML=curva.map(function(item,idx){return '<div class="sector-row"><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue);width:55px">'+item.hora+'</span><span style="font-size:13px;flex:1">EC: '+item.ec+' mS/cm</span><button class="btn-off" style="padding:4px 10px;font-size:12px" onclick="removeFertiCurva(\''+par+'\','+idx+')">×</button></div>';}).join('');
+  if(!curva.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);margin:6px 0">Nenhum intervalo configurado</div>';return;}
+  el.innerHTML=curva.map(function(item,idx){
+    return '<div class="ec-interval">'
+      +'<span class="ec-time">'+item.inicio+'</span>'
+      +'<span class="ec-arrow">→</span>'
+      +'<span class="ec-time">'+item.fim+'</span>'
+      +'<span class="ec-val">EC '+parseFloat(item.ec).toFixed(2)+' mS/cm</span>'
+      +'<button class="btn-off" style="padding:4px 10px;font-size:12px" onclick="removeFertiCurva(\''+par+'\','+idx+')">×</button>'
+      +'</div>';
+  }).join('');
 }
+
 function addFertiCurva(){
-  var par=document.getElementById('ferti-par-select').value,hora=document.getElementById('ferti-hora').value.trim(),ec=parseFloat(document.getElementById('ferti-ec-val').value);
-  if(!/^\d{2}:\d{2}$/.test(hora)){toast('Formato inválido!');return;}
-  if(isNaN(ec)||ec<0||ec>10){toast('EC inválido!');return;}
-  fertiCurvas[par].push({hora:hora,ec:ec});fertiCurvas[par].sort(function(a,b){return a.hora.localeCompare(b.hora);});
-  document.getElementById('ferti-hora').value='';document.getElementById('ferti-ec-val').value='';loadFertiCurva();
+  var par=document.getElementById('ferti-par-select').value;
+  var inicio=document.getElementById('ferti-hora-inicio').value.trim();
+  var fim=document.getElementById('ferti-hora-fim').value.trim();
+  var ec=parseFloat(document.getElementById('ferti-ec-val').value);
+  if(!/^\d{2}:\d{2}$/.test(inicio)||!/^\d{2}:\d{2}$/.test(fim)){toast('Use HH:MM nas duas horas!');return;}
+  if(isNaN(ec)||ec<0||ec>10){toast('EC inválido (0-10)!');return;}
+  if(inicio>=fim){toast('Hora fim deve ser maior que início!');return;}
+  // Detecta sobreposição com intervalos existentes
+  var overlap=(fertiCurvas[par]||[]).some(function(it){return !(fim<=it.inicio||inicio>=it.fim);});
+  if(overlap){toast('⚠ Esse horário se sobrepõe a outro intervalo!');return;}
+  fertiCurvas[par].push({inicio:inicio,fim:fim,ec:ec});
+  fertiCurvas[par].sort(function(a,b){return a.inicio.localeCompare(b.inicio);});
+  document.getElementById('ferti-hora-inicio').value='';
+  document.getElementById('ferti-hora-fim').value='';
+  document.getElementById('ferti-ec-val').value='';
+  loadFertiCurva();
 }
 function removeFertiCurva(par,idx){fertiCurvas[par].splice(idx,1);loadFertiCurva();}
-function saveFertiCurva(){var par=document.getElementById('ferti-par-select').value;publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});toast('Curva salva!');}
+function saveFertiCurva(){var par=document.getElementById('ferti-par-select').value;publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});toast('Curva do Par '+par+' salva!');}
 function fertiManual(par,action){publishFerti({cmd:'ferti_manual',par:par,action:action});toast('Par '+par+' '+(action==='on'?'ligado':'desligado'));}
 
 function onEspOnline(val){
