@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Irrigação — Morango v1.1</title>
+<title>Irrigação — Morango v1.1.2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -127,7 +127,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.1</span></div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.1.2</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -351,6 +351,8 @@ var timerInterval=null,timerStart=null,timerSector=null;
 // v1.1: estados dos modais
 var copySource=null,copyTargets={};
 var mzSelected={};
+// v1.1.2: sequência multi-zonas gerenciada pelo app (não depende do firmware)
+var mzSequence={running:false,sectors:[],idx:0,durationMs:0,timeout:null};
 for(var i=1;i<=6;i++){fertiSetores[i]='A';cfgSchedules[i]=[];cfgEnabled[i]=true;cfgExpanded[i]=false;}
 
 function init(){
@@ -433,7 +435,9 @@ function onStatus(data){
   handleTimer(data);
   renderStatus();
   renderManualSectors();
-  renderConfigSectors();
+  // v1.1.2: NÃO chamamos renderConfigSectors aqui — o status chega a cada 1-2s
+  // e re-renderizar destrói inputs que o usuário está editando.
+  // A aba Configurar é renderizada apenas ao entrar (showTab) ou em onSchedule.
 }
 
 function onSchedule(data){
@@ -513,6 +517,7 @@ function toggleManualSector(sid){
 function openMultiZonas(){
   var sectors=state.sectors||[];
   if(!sectors.length){toast('Aguardando setores do controlador...');return;}
+  if(mzSequence.running){toast('⚠ Já há uma sequência rodando! Use Parada de emergência para cancelar.');return;}
   mzSelected={};
   var grid=document.getElementById('mz-grid');
   grid.innerHTML=sectors.map(function(sec){
@@ -534,9 +539,47 @@ function executeMultiZonas(){
   var dmin=parseInt(document.getElementById('mz-min').value)||0;
   var dsec=parseInt(document.getElementById('mz-sec').value)||0;
   if(dmin===0&&dsec===0){toast('Tempo deve ser maior que zero!');return;}
-  publish({cmd:'multi_zone',sectors:list,duration_min:dmin,duration_sec:dsec});
-  toast('▶ Iniciando '+list.length+' setor(es) em sequência');
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return;}
+  // v1.1.2: sequência gerenciada pelo app — envia manual_on/manual_off para cada setor
+  mzSequence={
+    running:true,
+    sectors:list,
+    idx:0,
+    durationMs:(dmin*60+dsec)*1000,
+    timeout:null
+  };
   closeMultiZonas();
+  toast('▶ Iniciando '+list.length+' setor(es) em sequência');
+  mzNextStep();
+}
+
+function mzNextStep(){
+  if(!mzSequence.running)return;
+  if(mzSequence.idx>=mzSequence.sectors.length){
+    mzSequence.running=false;
+    toast('✅ Multi-zonas concluída ('+mzSequence.sectors.length+' setores)');
+    return;
+  }
+  var sid=mzSequence.sectors[mzSequence.idx];
+  var pos=mzSequence.idx+1,total=mzSequence.sectors.length;
+  publish({cmd:'manual_on',sector:sid});
+  toast('Setor '+sid+' ('+pos+'/'+total+')');
+  mzSequence.timeout=setTimeout(function(){
+    publish({cmd:'manual_off',sector:sid});
+    mzSequence.idx++;
+    // Pausa de 800ms entre setores para o firmware acomodar
+    mzSequence.timeout=setTimeout(mzNextStep,800);
+  },mzSequence.durationMs);
+}
+
+function mzCancel(){
+  if(mzSequence.timeout){clearTimeout(mzSequence.timeout);mzSequence.timeout=null;}
+  if(mzSequence.running){
+    // Desliga o setor que estiver ativo no momento
+    var sid=mzSequence.sectors[mzSequence.idx];
+    if(sid)publish({cmd:'manual_off',sector:sid});
+  }
+  mzSequence.running=false;
 }
 
 /* ===================================================================== */
@@ -545,6 +588,12 @@ function executeMultiZonas(){
 
 function renderConfigSectors(){
   var sectors=state.sectors||[],el=document.getElementById('cfg-sectors-list');
+  // v1.1.2: se o usuário está editando algum input/select da aba Configurar,
+  // NÃO re-renderiza (isso destruiria o input e perderia o que ele digitou)
+  var ae=document.activeElement;
+  if(ae && ae.id && ae.id.indexOf('cfg-')===0 && el.contains(ae)){
+    return;
+  }
   if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div>';return;}
   el.innerHTML=sectors.map(function(sec){
     var sid=sec.id;
@@ -722,7 +771,7 @@ function sendRTC(){
   publish(d);toast('⏰ Horário enviado para ESP32!');
 }
 
-function stopAll(){publish({cmd:'stop_all'});toast('⛔ Parada de emergência enviada!');}
+function stopAll(){mzCancel();publish({cmd:'stop_all'});toast('⛔ Parada de emergência enviada!');}
 function forcarReconfig(){publish({cmd:'reset_wifi'});toast('Comando enviado! Controlador entrará em modo portal.');}
 
 /* ===================================================================== */
