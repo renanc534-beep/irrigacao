@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Irrigação — Morango v1.1.3</title>
+<title>Irrigação — Morango v1.3</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -121,13 +121,41 @@ select.cfg-input{cursor:pointer}
 .ec-val{font-size:13px;font-weight:700;color:var(--green);flex:1;text-align:right;font-family:var(--mono)}
 
 .version-tag{font-size:9px;color:var(--muted);font-family:var(--mono);background:var(--surface2);padding:2px 6px;border-radius:6px;margin-left:6px}
+
+/* ===== Aba Clima (estação meteorológica esp32_estacao01) ===== */
+.clima-hdr{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+.clima-hdr-dot{width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:6px;display:inline-block;vertical-align:middle}
+.clima-hdr-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.fcast-card{border-radius:var(--radius);padding:18px;margin-bottom:10px;text-align:center;border:1px solid var(--border);background:var(--surface);transition:background .3s,border-color .3s}
+.fcast-card.f-collecting{background:linear-gradient(135deg,rgba(123,128,160,.18),rgba(123,128,160,.04));border-color:var(--muted)}
+.fcast-card.f-stable{background:linear-gradient(135deg,rgba(0,229,160,.16),rgba(0,229,160,.04));border-color:var(--green)}
+.fcast-card.f-improving{background:linear-gradient(135deg,rgba(77,159,255,.18),rgba(77,159,255,.04));border-color:var(--blue)}
+.fcast-card.f-rain{background:linear-gradient(135deg,rgba(255,184,48,.18),rgba(255,184,48,.04));border-color:var(--amber)}
+.fcast-card.f-storm{background:linear-gradient(135deg,rgba(255,77,109,.22),rgba(255,77,109,.06));border-color:var(--red)}
+.fcast-icon{font-size:54px;line-height:1;margin-bottom:6px}
+.fcast-title{font-size:16px;font-weight:800;letter-spacing:.5px;margin-bottom:8px}
+.fcast-meta{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+.fcast-meta b{color:var(--text);font-weight:700}
+.clima-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+@media(min-width:480px){.clima-grid{grid-template-columns:1fr 1fr 1fr}}
+.clima-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;position:relative;transition:border-color .3s}
+.clima-card.s-ok{border-color:var(--green)}
+.clima-card.s-warn{border-color:var(--amber)}
+.clima-card.s-crit{border-color:var(--red)}
+.clima-card-lab{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.clima-card-val{font-size:20px;font-weight:800;font-family:var(--mono);line-height:1.1}
+.clima-card-unit{font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:2px}
+.clima-card-foot{font-size:10px;font-weight:700;margin-top:4px}
+.clima-card.s-ok .clima-card-foot{color:var(--green)}
+.clima-card.s-warn .clima-card-foot{color:var(--amber)}
+.clima-card.s-crit .clima-card-foot{color:var(--red)}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.1.3</span></div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.3</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -138,6 +166,7 @@ select.cfg-input{cursor:pointer}
   <button class="tab" onclick="showTab('manual',this)">Manual</button>
   <button class="tab" onclick="showTab('config',this)">Configurar</button>
   <button class="tab" onclick="showTab('historico',this)">Histórico</button>
+  <button class="tab" onclick="showTab('clima',this)">🌤️ Clima</button>
   <button class="tab" onclick="showTab('rtc',this)">Relógio</button>
   <button class="tab" onclick="showTab('ferti',this)">Ferti</button>
   <button class="tab" onclick="showTab('wifi',this)">WiFi</button>
@@ -178,6 +207,70 @@ select.cfg-input{cursor:pointer}
   <div id="tab-historico" style="display:none">
     <div class="card"><div class="card-title">Últimas irrigações</div><div id="hist-list"><div style="color:var(--muted);font-size:13px">Nenhum histórico ainda</div></div></div>
     <button class="btn-add" style="width:100%;padding:10px" onclick="clearHistory()">🗑 Limpar histórico</button>
+  </div>
+
+  <!-- ===== Aba Clima — estação meteorológica esp32_estacao01 ===== -->
+  <div id="tab-clima" style="display:none">
+    <div class="clima-hdr">
+      <div><span class="clima-hdr-dot" id="clima-dot"></span><span id="clima-status">Aguardando dados...</span></div>
+      <div id="clima-last">—</div>
+    </div>
+
+    <div class="fcast-card f-collecting" id="fcast-card">
+      <div class="fcast-icon" id="fcast-icon">⏳</div>
+      <div class="fcast-title" id="fcast-title">Coletando dados...</div>
+      <div class="fcast-meta">
+        Pressão: <b id="fcast-press">—</b> hPa<br>
+        Tendência 3h: <b id="fcast-trend">—</b>
+      </div>
+    </div>
+
+    <div class="clima-grid">
+      <div class="clima-card" id="cc-temp">
+        <div class="clima-card-lab">Temperatura</div>
+        <div><span class="clima-card-val" id="v-temp">—</span><span class="clima-card-unit">°C</span></div>
+        <div class="clima-card-foot" id="f-temp">—</div>
+      </div>
+      <div class="clima-card" id="cc-hum">
+        <div class="clima-card-lab">Umidade</div>
+        <div><span class="clima-card-val" id="v-hum">—</span><span class="clima-card-unit">%</span></div>
+        <div class="clima-card-foot" id="f-hum">—</div>
+      </div>
+      <div class="clima-card" id="cc-vpd">
+        <div class="clima-card-lab">VPD</div>
+        <div><span class="clima-card-val" id="v-vpd">—</span><span class="clima-card-unit">kPa</span></div>
+        <div class="clima-card-foot" id="f-vpd">—</div>
+      </div>
+      <div class="clima-card" id="cc-lux">
+        <div class="clima-card-lab">Luminosidade</div>
+        <div><span class="clima-card-val" id="v-lux">—</span><span class="clima-card-unit">lux</span></div>
+        <div class="clima-card-foot" id="f-lux">—</div>
+      </div>
+      <div class="clima-card" id="cc-dli">
+        <div class="clima-card-lab">DLI hoje</div>
+        <div><span class="clima-card-val" id="v-dli">—</span><span class="clima-card-unit">mol/m²</span></div>
+        <div class="clima-card-foot" id="f-dli">—</div>
+      </div>
+      <div class="clima-card" id="cc-orv">
+        <div class="clima-card-lab">Pto orvalho</div>
+        <div><span class="clima-card-val" id="v-orv">—</span><span class="clima-card-unit">°C</span></div>
+        <div class="clima-card-foot" id="f-orv">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Métricas instantâneas</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.7">
+        <div>PPFD: <span id="v-ppfd" style="color:var(--text);font-weight:700">—</span> µmol/m²/s</div>
+        <div>Pressão: <span id="v-press" style="color:var(--text);font-weight:700">—</span> hPa</div>
+      </div>
+    </div>
+
+    <div class="info-box" style="margin-top:10px;font-size:11px">
+      <strong>Faixas alvo (morango):</strong> VPD 0.4–1.2 kPa · DLI 12–22 mol/m² · Temp 18–26°C · Umid 60–80%<br>
+      <!-- TODO Fase 2: cards de vento, rosa dos ventos, chuva -->
+      Atualização: a cada 60s · Previsão: requer 3h de dados de pressão
+    </div>
   </div>
 
   <div id="tab-rtc" style="display:none">
@@ -366,17 +459,133 @@ function init(){
 }
 
 function showTab(name,el){
-  ['status','manual','config','historico','rtc','ferti','wifi','conn'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'':'none';});
+  ['status','manual','config','historico','clima','rtc','ferti','wifi','conn'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'':'none';});
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
   if(el)el.classList.add('active');
   if(name==='config')renderConfigSectors();
   if(name==='manual')renderManualSectors();
   if(name==='historico')renderHistory();
   if(name==='ferti'){renderFertiSetores();loadFertiCurva();}
+  if(name==='clima')renderClima();
 }
 
 var toastTimer;
 function toast(msg){var el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show');},2500);}
+
+// ===== Estação meteorológica esp32_estacao01 =====
+var climaAtual={temperatura:null,umidade:null,pressao:null,lux:null,vpd:null,ppfd:null,dli_acumulado:null,ponto_orvalho:null,pressao_tendencia:null,previsao:'coletando_dados',ultima_atualizacao:null};
+// TODO Fase 2: vento_velocidade, vento_direcao, chuva_mm_hora, chuva_mm_dia
+
+function onMeteoMsg(medida,valor){
+  if(medida==='status'){
+    // {"online":true,"rssi":-65,"uptime":12345}
+    try{var s=JSON.parse(valor);climaAtual.status_online=!!s.online;climaAtual.rssi=s.rssi;}catch(e){}
+  } else if(medida==='previsao'){
+    climaAtual.previsao=valor;
+  } else if(climaAtual.hasOwnProperty(medida)){
+    var n=parseFloat(valor);
+    climaAtual[medida]=isNaN(n)?valor:n;
+  }
+  climaAtual.ultima_atualizacao=Date.now();
+  renderClima();
+}
+
+// Regras de cor por métrica (morango)
+function climaClass(v,min_ok,max_ok,min_warn,max_warn){
+  if(v===null||v===undefined||isNaN(v))return ['',''];
+  if(v>=min_ok && v<=max_ok)return ['s-ok','✓ Ideal'];
+  if(v>=min_warn && v<=max_warn)return ['s-warn','⚠ Atenção'];
+  return ['s-crit','✗ Fora da faixa'];
+}
+
+function setCard(id,statusClass,footText){
+  var el=document.getElementById('cc-'+id);if(!el)return;
+  el.classList.remove('s-ok','s-warn','s-crit');
+  if(statusClass)el.classList.add(statusClass);
+  document.getElementById('f-'+id).textContent=footText||'—';
+}
+
+function renderClima(){
+  // Indicador online/offline (5 min sem update = offline)
+  var online=false;
+  if(climaAtual.ultima_atualizacao){
+    var diff=(Date.now()-climaAtual.ultima_atualizacao)/1000;
+    online=diff<300;
+    var txt='Última atualização: ';
+    if(diff<60)txt+=Math.round(diff)+'s atrás';
+    else if(diff<3600)txt+=Math.round(diff/60)+'min atrás';
+    else txt+=Math.round(diff/3600)+'h atrás';
+    document.getElementById('clima-last').textContent=txt;
+  }
+  document.getElementById('clima-dot').classList.toggle('on',online);
+  document.getElementById('clima-status').textContent=online?'Online · esp32_estacao01':'Offline · esp32_estacao01';
+
+  // Temperatura: 18-26 ok, 14-30 warn
+  if(climaAtual.temperatura!==null){
+    document.getElementById('v-temp').textContent=climaAtual.temperatura.toFixed(1);
+    var c=climaClass(climaAtual.temperatura,18,26,14,30);setCard('temp',c[0],c[1]);
+  }
+  // Umidade: 60-80 ok, 50-90 warn
+  if(climaAtual.umidade!==null){
+    document.getElementById('v-hum').textContent=Math.round(climaAtual.umidade);
+    var c=climaClass(climaAtual.umidade,60,80,50,90);setCard('hum',c[0],c[1]);
+  }
+  // VPD: 0.4-1.2 ok, 0.2-1.6 warn
+  if(climaAtual.vpd!==null){
+    document.getElementById('v-vpd').textContent=climaAtual.vpd.toFixed(2);
+    var c=climaClass(climaAtual.vpd,0.4,1.2,0.2,1.6);setCard('vpd',c[0],c[1]);
+  }
+  // Luminosidade: >50k ok, 10k-50k warn, <10k crit
+  if(climaAtual.lux!==null){
+    var lux=climaAtual.lux;
+    document.getElementById('v-lux').textContent=lux>=1000?(lux/1000).toFixed(1)+'k':Math.round(lux);
+    var cls,lbl;
+    if(lux>50000){cls='s-ok';lbl='✓ Pleno sol';}
+    else if(lux>=10000){cls='s-warn';lbl='⚠ Parcial';}
+    else{cls='s-crit';lbl='✗ Baixa luz';}
+    setCard('lux',cls,lbl);
+  }
+  // DLI: 12-22 ok, 8-28 warn
+  if(climaAtual.dli_acumulado!==null){
+    document.getElementById('v-dli').textContent=climaAtual.dli_acumulado.toFixed(1);
+    var c=climaClass(climaAtual.dli_acumulado,12,22,8,28);setCard('dli',c[0],c[1]);
+  }
+  // Ponto de orvalho: delta T-orvalho >4 ok, 2-4 warn, <2 crit
+  if(climaAtual.ponto_orvalho!==null){
+    document.getElementById('v-orv').textContent=climaAtual.ponto_orvalho.toFixed(1);
+    if(climaAtual.temperatura!==null){
+      var dt=climaAtual.temperatura-climaAtual.ponto_orvalho;
+      var cls,lbl;
+      if(dt>4){cls='s-ok';lbl='✓ ΔT '+dt.toFixed(1)+'°C';}
+      else if(dt>=2){cls='s-warn';lbl='⚠ Orvalho próximo (ΔT '+dt.toFixed(1)+'°C)';}
+      else{cls='s-crit';lbl='✗ Risco alto (ΔT '+dt.toFixed(1)+'°C)';}
+      setCard('orv',cls,lbl);
+    }
+  }
+  // Métricas extras
+  if(climaAtual.ppfd!==null)document.getElementById('v-ppfd').textContent=climaAtual.ppfd.toFixed(0);
+  if(climaAtual.pressao!==null)document.getElementById('v-press').textContent=climaAtual.pressao.toFixed(1);
+
+  // Card de previsão
+  var fc=document.getElementById('fcast-card');
+  var icon=document.getElementById('fcast-icon');
+  var titulo=document.getElementById('fcast-title');
+  fc.classList.remove('f-collecting','f-stable','f-improving','f-rain','f-storm');
+  var p=climaAtual.previsao||'coletando_dados';
+  if(p==='estavel'){fc.classList.add('f-stable');icon.textContent='☀️';titulo.textContent='Tempo Estável';}
+  else if(p==='tempo_melhorando'){fc.classList.add('f-improving');icon.textContent='🌤️';titulo.textContent='Tempo Melhorando';}
+  else if(p==='chuva_provavel'){fc.classList.add('f-rain');icon.textContent='🌧️';titulo.textContent='Chuva Provável (6–12h)';}
+  else if(p==='tempestade_provavel'){fc.classList.add('f-storm');icon.textContent='⛈️';titulo.textContent='Tempestade Provável (3–6h)';}
+  else{fc.classList.add('f-collecting');icon.textContent='⏳';titulo.textContent='Coletando dados (3h)';}
+
+  document.getElementById('fcast-press').textContent=climaAtual.pressao!==null?climaAtual.pressao.toFixed(1):'—';
+  var tr=climaAtual.pressao_tendencia;
+  document.getElementById('fcast-trend').textContent=tr!==null&&tr!==undefined?(tr>0?'+':'')+tr.toFixed(2)+' hPa':'aguardando 3h';
+}
+
+// Atualiza indicador online a cada 30s mesmo sem novas mensagens
+setInterval(function(){if(document.getElementById('tab-clima').style.display!=='none')renderClima();},30000);
+
 
 function connect(){
   var broker=document.getElementById('inp-broker').value.trim();
@@ -394,6 +603,8 @@ function connect(){
     client.subscribe('esp32_lavoura01/irrigation/schedule');
     client.subscribe('esp32_lavoura01/irrigation/online');
     client.subscribe('fertigacao/status');
+    // Estação meteorológica (esp32_estacao01)
+    client.subscribe('esp32_estacao01/meteo/+');
     toast('✅ Conectado!');
   });
   client.on('offline',function(){document.getElementById('conn-dot').classList.remove('on');});
@@ -403,6 +614,11 @@ function connect(){
     toast('❌ Erro: '+(err.message||'sem conexão'));
   });
   client.on('message',function(t,msg){
+    // Roteamento da estação meteorológica (payloads são valores soltos, não JSON)
+    if(t.indexOf('esp32_estacao01/meteo/')===0){
+      onMeteoMsg(t.split('/').pop(), msg.toString());
+      return;
+    }
     try{var d=JSON.parse(msg.toString());
       if(t==='esp32_lavoura01/irrigation/status')onStatus(d);
       if(t==='esp32_lavoura01/irrigation/schedule')onSchedule(d);
