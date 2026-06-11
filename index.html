@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Irrigação — Morango v1.3.2</title>
+<title>Irrigação — Morango v1.4</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -127,7 +127,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.3.2</span></div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.4</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -281,6 +281,8 @@ select.cfg-input{cursor:pointer}
         esp32_lavoura01/irrigation/command<br>
         esp32_lavoura01/irrigation/schedule <span style="color:var(--green)">(retain)</span><br>
         esp32_lavoura01/irrigation/online <span style="color:var(--green)">(retain · LWT)</span><br>
+        esp32_lavoura01/irrigation/history <span style="color:var(--green)">(retain · v1.4)</span><br>
+        esp32_lavoura01/irrigation/history/clear<br>
         fertigacao/status <span style="color:var(--green)">(retain)</span><br>
         fertigacao/command<br>
         estacao/dados<br>
@@ -346,7 +348,7 @@ var client=null;
 var state={sectors:[],pump:false,current_sector:null,datetime:''};
 var cfgSchedules={},cfgEnabled={},cfgExpanded={};
 var fertiCurvas={A:[],B:[],C:[]},fertiSetores={};
-var irrigHistory=JSON.parse(localStorage.getItem('hist')||'[]');
+var irrigHistory=[]; // v1.4: vem do script no Pi via MQTT (tópico irrigation/history retain)
 var timerInterval=null,timerStart=null,timerSector=null;
 // v1.1: estados dos modais
 var copySource=null,copyTargets={};
@@ -393,6 +395,7 @@ function connect(){
     client.subscribe('esp32_lavoura01/irrigation/status');
     client.subscribe('esp32_lavoura01/irrigation/schedule');
     client.subscribe('esp32_lavoura01/irrigation/online');
+    client.subscribe('esp32_lavoura01/irrigation/history'); // v1.4: histórico do Pi
     client.subscribe('fertigacao/status');
     toast('✅ Conectado!');
   });
@@ -406,6 +409,7 @@ function connect(){
     try{var d=JSON.parse(msg.toString());
       if(t==='esp32_lavoura01/irrigation/status')onStatus(d);
       if(t==='esp32_lavoura01/irrigation/schedule')onSchedule(d);
+      if(t==='esp32_lavoura01/irrigation/history')onHistory(d); // v1.4
       if(t==='fertigacao/status')onFertiStatus(d);
     }catch(e){
       if(t==='esp32_lavoura01/irrigation/online')onEspOnline(msg.toString());
@@ -418,6 +422,14 @@ function publish(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');
 function publishFerti(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('fertigacao/command',JSON.stringify(obj));}
 
 function onStatus(data){
+  // v1.4: popula cfgSchedules na primeira vez que o setor aparece no status.
+  // Antes, cfgSchedules ficava [] até o onSchedule retain chegar — e como
+  // [] é truthy em JS, o renderStatus mostrava "Sem horário" mesmo havendo.
+  (data.sectors||[]).forEach(function(sec){
+    if((!cfgSchedules[sec.id]||!cfgSchedules[sec.id].length)&&sec.schedules&&sec.schedules.length){
+      cfgSchedules[sec.id]=sec.schedules.slice();
+    }
+  });
   state=data;
   var pump=data.pump||false;
   document.getElementById('st-pump').textContent=pump?'LIGADA':'OFF';
@@ -460,25 +472,42 @@ function handleTimer(data){
     if(!timerStart||timerSector!==data.current_sector){timerStart=Date.now();timerSector=data.current_sector;if(timerInterval)clearInterval(timerInterval);timerInterval=setInterval(updateTimer,1000);}
     card.classList.add('active');document.getElementById('timer-sector').textContent='Setor '+data.current_sector;
   }else{
-    if(timerStart&&timerSector){var dur=Math.round((Date.now()-timerStart)/1000);if(dur>5)addHistory(timerSector,dur);}
+    // v1.4: histórico agora é gravado pelo script historico_irrigacao.py no Pi
+    // (vê transições no status, grava em arquivo e publica retain).
+    // O app não salva mais localmente — multi-zonas perdia registros aqui
+    // porque pump continua true entre setores.
     timerStart=null;timerSector=null;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}card.classList.remove('active');
   }
 }
 function updateTimer(){if(!timerStart)return;var s=Math.floor((Date.now()-timerStart)/1000),m=Math.floor(s/60);s=s%60;document.getElementById('timer-val').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
 
-function addHistory(sector,durSec){var now=new Date();irrigHistory.unshift({sector:sector,dur:durSec,ts:now.toLocaleString('pt-BR')});if(irrigHistory.length>50)irrigHistory.pop();localStorage.setItem('hist',JSON.stringify(irrigHistory));renderHistory();}
+// v1.4: histórico vem do script no Pi via tópico retain
+// esp32_lavoura01/irrigation/history. Payload: {h:[{s,t,d},...]}
+function onHistory(data){
+  var list=Array.isArray(data)?data:(data.h||[]);
+  irrigHistory=list.map(function(e){return {sector:e.s,dur:e.d,ts:e.t};});
+  renderHistory();
+}
 function renderHistory(){
   var el=document.getElementById('hist-list');
-  if(!irrigHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum histórico ainda</div>';return;}
+  if(!irrigHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum histórico ainda<br><br><span style="font-size:11px">⚠ Aguardando o script <code>historico_irrigacao.py</code> no Raspberry Pi</span></div>';return;}
   el.innerHTML=irrigHistory.map(function(h){var m=Math.floor(h.dur/60),s=h.dur%60,d=m>0?m+'min '+s+'s':s+'s';return '<div class="hist-item"><div class="hist-info"><div class="hist-title">💧 Setor '+h.sector+'</div><div class="hist-time">'+h.ts+'</div></div><div class="hist-dur">'+d+'</div></div>';}).join('');
 }
-function clearHistory(){irrigHistory=[];localStorage.removeItem('hist');renderHistory();toast('Histórico limpo!');}
+function clearHistory(){
+  if(!confirm('Limpar todo o histórico? Esta ação não pode ser desfeita e afeta o histórico salvo no servidor.'))return;
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return;}
+  client.publish('esp32_lavoura01/irrigation/history/clear','1');
+  toast('Comando de limpeza enviado ao servidor');
+}
 
 function renderStatus(){
   var sectors=state.sectors||[],el=document.getElementById('st-sectors');
   if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados...</div>';return;}
   el.innerHTML=sectors.map(function(sec){
-    var active=state.current_sector==sec.id,scheds=cfgSchedules[sec.id]||sec.schedules||[],enabled=cfgEnabled[sec.id]!==false&&sec.enabled!==false;
+    var active=state.current_sector==sec.id;
+    // v1.4: [] é truthy — fallback explícito por .length
+    var scheds=(cfgSchedules[sec.id]&&cfgSchedules[sec.id].length)?cfgSchedules[sec.id]:(sec.schedules||[]);
+    var enabled=cfgEnabled[sec.id]!==false&&sec.enabled!==false;
     var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
     var dsec=sec.duration_sec||0;
     var durStr=dmin+'min'+(dsec>0?' '+dsec+'s':'');
@@ -684,11 +713,15 @@ function removeScheduleInline(sid,t){
 }
 
 function saveSectorInline(sid){
+  var sec=(state.sectors||[]).find(function(s){return s.id===sid;})||{};
   var name=document.getElementById('cfg-name-'+sid).value.trim();
   var dmin=parseInt(document.getElementById('cfg-dmin-'+sid).value)||0;
   var dsec=parseInt(document.getElementById('cfg-dsec-'+sid).value)||0;
   var enabled=cfgEnabled[sid]!==false;
-  var scheds=cfgSchedules[sid]||[];
+  // v1.4: lista vazia é truthy em JS — fallback explícito por .length
+  // (cfgSchedules[sid] inicia como [] no init; sem este check o app
+  //  mandava lista vazia e o firmware apagava os horários)
+  var scheds=(cfgSchedules[sid]&&cfgSchedules[sid].length)?cfgSchedules[sid]:(sec.schedules||[]);
   publish({cmd:'set_sector',sector:sid,name:name,duration_min:dmin,duration_sec:dsec,enabled:enabled,schedules:scheds});
   if(client&&client.connected){
     client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:sid,schedules:scheds,enabled:enabled}),{retain:true});
