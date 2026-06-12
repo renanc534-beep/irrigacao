@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Irrigação — Morango v1.4</title>
+<meta name="theme-color" content="#0f1117">
+<title>Irrigação — Morango v1.5</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -32,11 +33,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0}
 .dot-active{background:var(--green);box-shadow:0 0 6px var(--green)}
 .dot-idle{background:var(--muted)}
+.dot-off{background:var(--red)}
 .sector-name{font-size:13px;font-weight:700;flex:1}
 .sector-sched{font-size:11px;color:var(--muted);font-family:var(--mono)}
 .badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
 .badge-ok{background:rgba(0,229,160,.15);color:var(--green)}
 .badge-muted{background:var(--surface2);color:var(--muted)}
+.badge-warn{background:rgba(255,184,48,.15);color:var(--amber)}
+.badge-err{background:rgba(255,77,109,.15);color:var(--red)}
+.badge-blue{background:rgba(77,159,255,.15);color:var(--blue)}
 .timer-card{background:linear-gradient(135deg,rgba(0,229,160,.08),rgba(0,184,125,.04));border:1px solid rgba(0,229,160,.25);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:none}
 .timer-card.active{display:block}
 .timer-label{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase}
@@ -71,8 +76,27 @@ select.cfg-input{cursor:pointer}
 .info-box{background:rgba(77,159,255,.08);border:1px solid rgba(77,159,255,.2);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--muted);line-height:1.7}
 .info-box strong{color:var(--blue)}
 .conn-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;margin-top:14px}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
+
+/* ===== v1.5: banner de controlador offline / status atrasado ===== */
+.banner{padding:11px 14px;border-radius:var(--radius);font-size:12px;font-weight:700;margin-bottom:12px;line-height:1.5}
+.banner-off{background:rgba(255,77,109,.12);border:1px solid var(--red);color:var(--red)}
+.banner-stale{background:rgba(255,184,48,.1);border:1px solid var(--amber);color:var(--amber)}
+
+/* ===== v1.5: aba Sensores ===== */
+.sens-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sens-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 9px}
+.sens-lbl{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.sens-val{font-size:16px;font-weight:800;font-family:var(--mono);margin-top:2px}
+.sens-unit{font-size:9px;color:var(--muted);font-family:var(--mono)}
+
+/* ===== v1.5: Sistema / OTA ===== */
+.sys-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.sys-row:last-child{border-bottom:none;padding-bottom:0}
+.sys-info{flex:1;min-width:0}
+.sys-name{font-size:13px;font-weight:700}
+.sys-meta{font-size:10px;color:var(--muted);font-family:var(--mono);line-height:1.7;margin-top:3px}
 
 /* ===== v1.1: Config — cards expansíveis ===== */
 .cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
@@ -127,7 +151,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.4</span></div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.5</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -137,19 +161,23 @@ select.cfg-input{cursor:pointer}
   <button class="tab active" onclick="showTab('status',this)">Status</button>
   <button class="tab" onclick="showTab('manual',this)">Manual</button>
   <button class="tab" onclick="showTab('config',this)">Configurar</button>
+  <button class="tab" onclick="showTab('sensores',this)">Sensores</button>
   <button class="tab" onclick="showTab('historico',this)">Histórico</button>
-  <button class="tab" onclick="showTab('rtc',this)">Relógio</button>
   <button class="tab" onclick="showTab('ferti',this)">Ferti</button>
+  <button class="tab" onclick="showTab('rtc',this)">Relógio</button>
   <button class="tab" onclick="showTab('wifi',this)">WiFi</button>
   <button class="tab" onclick="showTab('conn',this)">Conexão</button>
 </div>
 
 <div class="container">
+  <!-- v1.5: banner persistente — controlador offline / status atrasado -->
+  <div id="esp-banner" class="banner" style="display:none"></div>
+
   <button class="stop-btn" onclick="stopAll()">⛔ Parada de emergência</button>
 
   <div id="tab-status">
     <div class="timer-card" id="timer-card">
-      <div class="timer-label">⏱ Irrigando agora</div>
+      <div class="timer-label" id="timer-label">⏱ Irrigando agora</div>
       <div class="timer-val" id="timer-val">00:00</div>
       <div class="timer-sector" id="timer-sector">—</div>
     </div>
@@ -163,6 +191,14 @@ select.cfg-input{cursor:pointer}
 
   <!-- v1.1: aba Manual — card grande por setor + Multi-zonas -->
   <div id="tab-manual" style="display:none">
+    <!-- v1.5: card de progresso da sequência multi-zonas + cancelar -->
+    <div class="timer-card" id="mz-card">
+      <div class="timer-label">🌊 Multi-zonas em andamento</div>
+      <div class="timer-val" id="mz-val" style="font-size:28px">00:00</div>
+      <div class="timer-sector" id="mz-info">—</div>
+      <button class="btn-off" style="margin-top:10px;width:100%" onclick="mzCancelUser()">✖ Cancelar sequência</button>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Mantenha o app aberto e a tela ligada até o fim</div>
+    </div>
     <div id="manual-sectors"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div></div>
     <button class="save-btn" style="margin-top:8px" onclick="openMultiZonas()">🌊 Multi-zonas</button>
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5">Toque em um setor para liga/desliga rápido<br>Use Multi-zonas para irrigar vários em sequência</div>
@@ -175,7 +211,26 @@ select.cfg-input{cursor:pointer}
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5">Toque no setor para expandir e editar<br>Toggle liga/desliga a programação imediatamente</div>
   </div>
 
+  <!-- v1.5: aba Sensores — estação meteorológica + nós de substrato (Fase 1: só observação) -->
+  <div id="tab-sensores" style="display:none">
+    <div class="card">
+      <div class="card-title">Estação meteorológica <span class="badge badge-muted" id="meteo-online" style="float:right">—</span></div>
+      <div class="sens-grid" id="meteo-grid"></div>
+      <div id="meteo-previsao" style="font-size:12px;color:var(--blue);font-weight:700;margin-top:10px;display:none"></div>
+      <div id="meteo-alerta" style="margin-top:10px;display:none"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Substrato (nós LoRa)</div>
+      <div id="substrato-list"><div style="color:var(--muted);font-size:13px">Nenhum nó de substrato reportando ainda</div></div>
+    </div>
+    <div class="info-box">
+      <strong>Fase 1 — observação.</strong> Os sensores são apenas informativos: não interferem na irrigação. Sensores ausentes aparecem como "—" (pluviômetro, anemômetro e pH serão instalados futuramente).
+    </div>
+  </div>
+
   <div id="tab-historico" style="display:none">
+    <!-- v1.5: resumo estatístico calculado do histórico do Pi -->
+    <div class="card"><div class="card-title">Resumo</div><div id="hist-stats" style="font-size:13px;line-height:1.9;color:var(--muted)">—</div></div>
     <div class="card"><div class="card-title">Últimas irrigações</div><div id="hist-list"><div style="color:var(--muted);font-size:13px">Nenhum histórico ainda</div></div></div>
     <button class="btn-add" style="width:100%;padding:10px" onclick="clearHistory()">🗑 Limpar histórico</button>
   </div>
@@ -205,11 +260,13 @@ select.cfg-input{cursor:pointer}
 
   <div id="tab-ferti" style="display:none">
     <div class="card">
-      <div class="card-title">EC em tempo real</div>
+      <div class="card-title">Injetora <span class="badge badge-muted" id="ferti-online-badge" style="float:right">—</span></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-end">
         <div><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase">Atual</div><div id="ec-atual" style="font-size:32px;font-weight:800;font-family:var(--mono);color:var(--green)">—</div><div style="font-size:11px;color:var(--muted)">mS/cm</div></div>
         <div style="text-align:right"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase">Alvo</div><div id="ec-alvo" style="font-size:32px;font-weight:800;font-family:var(--mono);color:var(--blue)">—</div><div style="font-size:11px;color:var(--muted)">mS/cm</div></div>
       </div>
+      <!-- v1.5: par ativo + PWM por par, do fertigacao/status -->
+      <div id="ferti-extra" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:12px">—</div>
     </div>
     <div class="card"><div class="card-title">Par por setor</div><div id="ferti-setor-config"><div style="color:var(--muted);font-size:13px">Aguardando setores...</div></div></div>
     <div class="card">
@@ -255,6 +312,12 @@ select.cfg-input{cursor:pointer}
   </div>
 
   <div id="tab-conn" style="display:none">
+    <!-- v1.5: Sistema — versão de firmware + OTA dos devices da frota -->
+    <div class="card">
+      <div class="card-title">Sistema / OTA</div>
+      <div id="sys-list"><div style="color:var(--muted);font-size:13px">Aguardando dados...</div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5">O controlador recusa OTA enquanto irriga. Estação: requer ACL liberando publicação em esp32_estacao01/meteo/comando para o usuário webapp.</div>
+    </div>
     <div class="card">
       <div class="card-title">✅ Conexão pública</div>
       <div class="info-box" style="line-height:1.7">
@@ -271,7 +334,9 @@ select.cfg-input{cursor:pointer}
       <label class="cfg-label">Usuário</label>
       <input class="cfg-input" id="inp-user" value="webapp">
       <label class="cfg-label">Senha</label>
-      <input class="cfg-input" id="inp-pass" type="password" value="J7M1SCGleejEIDkF">
+      <!-- v1.5: senha NÃO fica mais embutida na página (página é pública no
+           GitHub Pages!). Digite uma vez — fica salva só neste aparelho. -->
+      <input class="cfg-input" id="inp-pass" type="password" value="" placeholder="digite a senha (salva neste aparelho)">
       <button class="conn-btn" onclick="reconnect()">Conectar / Reconectar</button>
     </div>
     <div class="card">
@@ -279,14 +344,16 @@ select.cfg-input{cursor:pointer}
       <div style="font-family:var(--mono);font-size:11px;color:var(--muted);line-height:2">
         esp32_lavoura01/irrigation/status <span style="color:var(--green)">(retain)</span><br>
         esp32_lavoura01/irrigation/command<br>
-        esp32_lavoura01/irrigation/schedule <span style="color:var(--green)">(retain)</span><br>
+        esp32_lavoura01/irrigation/schedule <span style="color:var(--green)">(retain · ACK)</span><br>
         esp32_lavoura01/irrigation/online <span style="color:var(--green)">(retain · LWT)</span><br>
-        esp32_lavoura01/irrigation/history <span style="color:var(--green)">(retain · v1.4)</span><br>
+        esp32_lavoura01/irrigation/history <span style="color:var(--green)">(retain · Pi)</span><br>
         esp32_lavoura01/irrigation/history/clear<br>
+        esp32_lavoura01/substratoNN/leitura <span style="color:var(--green)">(retain)</span><br>
+        esp32_lavoura01/substratoNN/online <span style="color:var(--green)">(retain)</span><br>
+        esp32_estacao01/meteo/# <span style="color:var(--green)">(retain)</span><br>
         fertigacao/status <span style="color:var(--green)">(retain)</span><br>
-        fertigacao/command<br>
-        estacao/dados<br>
-        sensores/+/dados
+        fertigacao/command · fertigacao/online <span style="color:var(--green)">(retain · LWT)</span><br>
+        fertigacao/curvas <span style="color:var(--green)">(retain · v1.5)</span>
       </div>
     </div>
   </div>
@@ -337,25 +404,49 @@ select.cfg-input{cursor:pointer}
       </div>
     </div>
     <button class="save-btn" style="margin-top:14px" onclick="executeMultiZonas()">▶ Iniciar irrigação sequencial</button>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">Os setores selecionados irrigarão um por vez<br>na ordem crescente, cada um pelo tempo definido</div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">Os setores selecionados irrigarão um por vez na ordem crescente.<br>⚠ A sequência é controlada pelo app: mantenha-o aberto com a tela ligada.</div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+var T='esp32_lavoura01';
 var client=null;
 var state={sectors:[],pump:false,current_sector:null,datetime:''};
 var cfgSchedules={},cfgEnabled={},cfgExpanded={};
 var fertiCurvas={A:[],B:[],C:[]},fertiSetores={};
 var irrigHistory=[]; // v1.4: vem do script no Pi via MQTT (tópico irrigation/history retain)
-var timerInterval=null,timerStart=null,timerSector=null;
+var timerStart=null,timerSector=null,remainUntil=null;
 // v1.1: estados dos modais
 var copySource=null,copyTargets={};
 var mzSelected={};
-// v1.1.2: sequência multi-zonas gerenciada pelo app (não depende do firmware)
-var mzSequence={running:false,sectors:[],idx:0,durationMs:0,timeout:null};
-for(var i=1;i<=6;i++){fertiSetores[i]='A';cfgSchedules[i]=[];cfgEnabled[i]=true;cfgExpanded[i]=false;}
+// v1.5: presença dos devices + telemetria + sensores
+var espOnline=null,lastStatusTs=null,lastStatusDatetime='';
+var telemetria=null;
+var fertiOnline=null;
+var meteoData={},meteoStatus=null,meteoAlerta=null;
+var substratos={};
+// v1.5: ACK de set_sector — firmware republica o schedule após aplicar
+var pendingAcks={};
+// v1.5: sequência multi-zonas com deadline de relógio de parede,
+// persistida em localStorage (sobrevive a reload) + Wake Lock
+var MZ_KEY='mz_seq';
+var mz={running:false,sectors:[],idx:0,durationMs:0,deadline:0,lastCmdTs:0};
+var mzResumed=false;
+var wakeLock=null;
+
+// v1.5: nada de loop fixo 1..6 — o substrato prevê 7º setor no GPIO 11.
+// Mapas por setor são criados conforme os setores aparecem no status.
+function ensureSetor(sid){
+  if(!(sid in cfgSchedules))cfgSchedules[sid]=[];
+  if(!(sid in cfgEnabled))cfgEnabled[sid]=true;
+  if(!(sid in cfgExpanded))cfgExpanded[sid]=false;
+  if(!(sid in fertiSetores))fertiSetores[sid]='A';
+}
+
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escapeAttr(s){return escapeHtml(s);}
 
 function init(){
   var saved=JSON.parse(localStorage.getItem('mqtt_cfg')||'{}');
@@ -364,17 +455,24 @@ function init(){
   if(saved.user)document.getElementById('inp-user').value=saved.user;
   if(saved.pass)document.getElementById('inp-pass').value=saved.pass;
   renderHistory();
-  if(document.getElementById('inp-broker').value)connect();
+  renderMeteo();
+  // v1.5: só auto-conecta se já tem senha salva (senha não vem mais no HTML)
+  if(document.getElementById('inp-broker').value&&document.getElementById('inp-pass').value)connect();
+  else if(!saved.pass)toast('Informe a senha na aba Conexão');
+  // v1.5: ticker global de 1s — timer, multi-zonas e banner
+  setInterval(tickUI,1000);
 }
 
 function showTab(name,el){
-  ['status','manual','config','historico','rtc','ferti','wifi','conn'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'':'none';});
+  ['status','manual','config','sensores','historico','rtc','ferti','wifi','conn'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'':'none';});
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
   if(el)el.classList.add('active');
   if(name==='config')renderConfigSectors();
   if(name==='manual')renderManualSectors();
   if(name==='historico')renderHistory();
-  if(name==='ferti'){renderFertiSetores();loadFertiCurva();}
+  if(name==='sensores'){renderMeteo();renderSubstratos();}
+  if(name==='conn')renderSistema();
+  if(name==='ferti'){renderFertiSetores();loadFertiCurva();renderFertiStatus();}
 }
 
 var toastTimer;
@@ -386,18 +484,28 @@ function connect(){
   var user=document.getElementById('inp-user').value.trim();
   var pass=document.getElementById('inp-pass').value.trim();
   if(!broker){toast('Preencha o broker!');return;}
+  if(!pass){toast('Preencha a senha!');return;}
   localStorage.setItem('mqtt_cfg',JSON.stringify({broker:broker,port:port,user:user,pass:pass}));
   if(client){try{client.end(true);}catch(e){}}
   var proto=(port===8884||port===443||location.protocol==='https:')?'wss://':'ws://';
   client=mqtt.connect(proto+broker+':'+port+'/mqtt',{username:user,password:pass,clientId:'irrig_app_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,keepalive:30});
   client.on('connect',function(){
     document.getElementById('conn-dot').classList.add('on');
-    client.subscribe('esp32_lavoura01/irrigation/status');
-    client.subscribe('esp32_lavoura01/irrigation/schedule');
-    client.subscribe('esp32_lavoura01/irrigation/online');
-    client.subscribe('esp32_lavoura01/irrigation/history'); // v1.4: histórico do Pi
+    client.subscribe(T+'/irrigation/status');
+    client.subscribe(T+'/irrigation/schedule');
+    client.subscribe(T+'/irrigation/online');
+    client.subscribe(T+'/irrigation/history'); // v1.4: histórico do Pi
+    // v1.5: substrato (nós LoRa republicados pelo controlador)
+    client.subscribe(T+'/+/leitura');
+    client.subscribe(T+'/+/online');
+    // v1.5: estação meteorológica (valores individuais retained)
+    client.subscribe('esp32_estacao01/meteo/#');
     client.subscribe('fertigacao/status');
+    client.subscribe('fertigacao/online');  // v1.5
+    client.subscribe('fertigacao/curvas');  // v1.5: curvas/pares retained
     toast('✅ Conectado!');
+    // v1.5: retoma sequência multi-zonas interrompida por reload/crash
+    if(!mzResumed){mzResumed=true;mzResume();}
   });
   client.on('offline',function(){document.getElementById('conn-dot').classList.remove('on');});
   client.on('error',function(err){
@@ -405,32 +513,96 @@ function connect(){
     console.error('MQTT erro:',err);
     toast('❌ Erro: '+(err.message||'sem conexão'));
   });
-  client.on('message',function(t,msg){
-    try{var d=JSON.parse(msg.toString());
-      if(t==='esp32_lavoura01/irrigation/status')onStatus(d);
-      if(t==='esp32_lavoura01/irrigation/schedule')onSchedule(d);
-      if(t==='esp32_lavoura01/irrigation/history')onHistory(d); // v1.4
-      if(t==='fertigacao/status')onFertiStatus(d);
-    }catch(e){
-      if(t==='esp32_lavoura01/irrigation/online')onEspOnline(msg.toString());
-    }
+  client.on('message',function(t,msgBuf){
+    var msg=msgBuf.toString();
+    // v1.5: tópicos com payload não-JSON primeiro
+    if(t===T+'/irrigation/online'){onEspOnline(msg);return;}
+    if(t==='fertigacao/online'){onFertiOnline(msg);return;}
+    if(t.indexOf('esp32_estacao01/meteo/')===0){onMeteo(t.slice('esp32_estacao01/meteo/'.length),msg);return;}
+    var mSub=t.match(/^esp32_lavoura01\/(substrato\d+)\/(leitura|online)$/);
+    if(mSub){onSubstrato(mSub[1],mSub[2],msg);return;}
+    try{var d=JSON.parse(msg);
+      if(t===T+'/irrigation/status')onStatus(d);
+      else if(t===T+'/irrigation/schedule')onSchedule(d);
+      else if(t===T+'/irrigation/history')onHistory(d); // v1.4
+      else if(t==='fertigacao/status')onFertiStatus(d);
+      else if(t==='fertigacao/curvas')onFertiCurvas(d); // v1.5
+    }catch(e){}
   });
 }
 
 function reconnect(){connect();toast('Reconectando...');}
-function publish(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('esp32_lavoura01/irrigation/command',JSON.stringify(obj));}
-function publishFerti(obj){if(!client||!client.connected){toast('⚠ Sem conexão!');return;}client.publish('fertigacao/command',JSON.stringify(obj));}
+
+// v1.5: QoS 1 (rede rural via Funnel — comando não pode se perder calado)
+// + bloqueio quando o controlador está sabidamente offline (LWT "0").
+// force=true só pra parada de emergência: tenta mesmo offline.
+function publish(obj,force){
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return false;}
+  if(!force&&espOnline==='0'){toast('⚠ Controlador OFFLINE — comando não enviado');return false;}
+  client.publish(T+'/irrigation/command',JSON.stringify(obj),{qos:1});
+  return true;
+}
+function publishFerti(obj){
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return false;}
+  if(fertiOnline==='0'){toast('⚠ Injetora OFFLINE — comando não enviado');return false;}
+  client.publish('fertigacao/command',JSON.stringify(obj),{qos:1});
+  return true;
+}
+
+/* ===================================================================== */
+/*  v1.5 — Presença do controlador + banner persistente                   */
+/* ===================================================================== */
+
+function onEspOnline(val){
+  var mudou=(espOnline!==null&&espOnline!==val);
+  espOnline=val;
+  if(mudou)toast(val==='0'?'⚠️ Controlador offline!':'✅ Controlador online!');
+  renderBanner();renderSistema();
+}
+function onFertiOnline(val){
+  var mudou=(fertiOnline!==null&&fertiOnline!==val);
+  fertiOnline=val;
+  if(mudou)toast(val==='0'?'⚠️ Injetora offline!':'✅ Injetora online!');
+  renderFertiStatus();renderSistema();
+}
+
+function renderBanner(){
+  var el=document.getElementById('esp-banner');
+  if(espOnline==='0'){
+    el.className='banner banner-off';
+    el.innerHTML='⚠ CONTROLADOR OFFLINE — comandos bloqueados'+(lastStatusDatetime?'<br>Último status: '+escapeHtml(lastStatusDatetime):'');
+    el.style.display='';
+    return;
+  }
+  // status atrasado: broker conectado, controlador "online", mas sem status há >20s
+  if(client&&client.connected&&espOnline==='1'&&lastStatusTs&&(Date.now()-lastStatusTs)>20000){
+    el.className='banner banner-stale';
+    el.innerHTML='⚠ Sem status do controlador há '+Math.round((Date.now()-lastStatusTs)/1000)+'s';
+    el.style.display='';
+    return;
+  }
+  el.style.display='none';
+}
+
+/* ===================================================================== */
+/*  Status                                                                */
+/* ===================================================================== */
 
 function onStatus(data){
-  // v1.4: popula cfgSchedules na primeira vez que o setor aparece no status.
-  // Antes, cfgSchedules ficava [] até o onSchedule retain chegar — e como
-  // [] é truthy em JS, o renderStatus mostrava "Sem horário" mesmo havendo.
+  state=data;
+  lastStatusTs=Date.now();
+  if(data.datetime)lastStatusDatetime=data.datetime;
+  if(data.telemetria)telemetria=data.telemetria;
+  // v1.5: o status retained do firmware é a fonte da verdade — sincroniza
+  // o buffer local de TODOS os setores, exceto o card aberto em edição
+  // (pra não destruir o que o usuário está digitando).
   (data.sectors||[]).forEach(function(sec){
-    if((!cfgSchedules[sec.id]||!cfgSchedules[sec.id].length)&&sec.schedules&&sec.schedules.length){
-      cfgSchedules[sec.id]=sec.schedules.slice();
+    ensureSetor(sec.id);
+    if(!cfgExpanded[sec.id]){
+      cfgSchedules[sec.id]=(sec.schedules||[]).slice();
+      cfgEnabled[sec.id]=sec.enabled!==false;
     }
   });
-  state=data;
   var pump=data.pump||false;
   document.getElementById('st-pump').textContent=pump?'LIGADA':'OFF';
   document.getElementById('st-pump').style.color=pump?'var(--green)':'var(--muted)';
@@ -445,73 +617,145 @@ function onStatus(data){
     document.getElementById('rtc-date').textContent=p[0]||'—';
   }
   handleTimer(data);
+  mzWatchdog(); // v1.5: detecta intervenção externa na sequência
   renderStatus();
   renderManualSectors();
+  renderBanner();
+  renderSistema();
   // v1.1.2: NÃO chamamos renderConfigSectors aqui — o status chega a cada 1-2s
   // e re-renderizar destrói inputs que o usuário está editando.
-  // A aba Configurar é renderizada apenas ao entrar (showTab) ou em onSchedule.
 }
 
+// v1.5: onSchedule agora também é o ACK do set_sector — o firmware
+// republica o schedule retained logo após aplicar o comando.
 function onSchedule(data){
-  if(data.sector_id&&data.schedules!==undefined){
-    cfgSchedules[data.sector_id]=data.schedules||[];
-    cfgEnabled[data.sector_id]=data.enabled!==false;
-    renderStatus();
-    renderConfigSectors();
+  if(data.sector_id===undefined||data.schedules===undefined)return;
+  var sid=data.sector_id;
+  ensureSetor(sid);
+  if(pendingAcks[sid]){
+    clearTimeout(pendingAcks[sid]);delete pendingAcks[sid];
+    toast('✅ Setor '+sid+' confirmado pelo controlador');
   }
+  if(!cfgExpanded[sid]){
+    cfgSchedules[sid]=(data.schedules||[]).slice();
+    cfgEnabled[sid]=data.enabled!==false;
+  }
+  renderStatus();
+  renderConfigSectors();
 }
 
-function onFertiStatus(data){
-  if(data.ec_atual!==undefined)document.getElementById('ec-atual').textContent=parseFloat(data.ec_atual).toFixed(2);
-  if(data.ec_alvo!==undefined)document.getElementById('ec-alvo').textContent=parseFloat(data.ec_alvo).toFixed(2);
+// v1.5: se o controlador não confirmar (schedule republicado) em 5s, avisa.
+function expectAck(sid){
+  if(pendingAcks[sid])clearTimeout(pendingAcks[sid]);
+  pendingAcks[sid]=setTimeout(function(){
+    delete pendingAcks[sid];
+    toast('⚠ Setor '+sid+': SEM confirmação do controlador — confira!');
+  },5000);
 }
 
+/* ── Timer: regressivo quando o firmware informa remaining_sec ── */
 function handleTimer(data){
   var card=document.getElementById('timer-card');
   if(data.pump&&data.current_sector){
-    if(!timerStart||timerSector!==data.current_sector){timerStart=Date.now();timerSector=data.current_sector;if(timerInterval)clearInterval(timerInterval);timerInterval=setInterval(updateTimer,1000);}
-    card.classList.add('active');document.getElementById('timer-sector').textContent='Setor '+data.current_sector;
+    // v1.5: remaining_sec vem do firmware (setores agendados). Manual = 0.
+    remainUntil=(data.remaining_sec&&data.remaining_sec>0)?Date.now()+data.remaining_sec*1000:null;
+    if(!timerStart||timerSector!==data.current_sector){timerStart=Date.now();timerSector=data.current_sector;}
+    card.classList.add('active');
+    var lbl='Setor '+data.current_sector;
+    if(mz.running)lbl+=' · multi-zonas '+(mz.idx+1)+'/'+mz.sectors.length;
+    if(data.queue&&data.queue.length)lbl+=' · fila: '+data.queue.map(function(s){return 'S'+s;}).join(', ');
+    document.getElementById('timer-sector').textContent=lbl;
   }else{
-    // v1.4: histórico agora é gravado pelo script historico_irrigacao.py no Pi
-    // (vê transições no status, grava em arquivo e publica retain).
-    // O app não salva mais localmente — multi-zonas perdia registros aqui
-    // porque pump continua true entre setores.
-    timerStart=null;timerSector=null;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}card.classList.remove('active');
+    timerStart=null;timerSector=null;remainUntil=null;
+    card.classList.remove('active');
   }
 }
-function updateTimer(){if(!timerStart)return;var s=Math.floor((Date.now()-timerStart)/1000),m=Math.floor(s/60);s=s%60;document.getElementById('timer-val').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;}
 
-// v1.4: histórico vem do script no Pi via tópico retain
-// esp32_lavoura01/irrigation/history. Payload: {h:[{s,t,d},...]}
+function tickUI(){
+  // timer principal
+  if(timerSector){
+    var lab=document.getElementById('timer-label'),el=document.getElementById('timer-val'),ms;
+    if(mz.running){ms=Math.max(0,mz.deadline-Date.now());lab.textContent='⏱ Multi-zonas — restante';}
+    else if(remainUntil){ms=Math.max(0,remainUntil-Date.now());lab.textContent='⏱ Irrigando — restante';}
+    else{ms=Date.now()-timerStart;lab.textContent='⏱ Irrigando — decorrido (manual)';}
+    var s=Math.floor(ms/1000),m=Math.floor(s/60);s=s%60;
+    el.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  }
+  // sequência multi-zonas
+  if(mz.running){
+    renderMzCard();
+    if(Date.now()>=mz.deadline&&client&&client.connected)mzAdvance();
+  }
+  renderBanner();
+}
+
+/* ── Histórico (v1.4: vem do Pi; v1.5: + resumo estatístico) ── */
 function onHistory(data){
   var list=Array.isArray(data)?data:(data.h||[]);
   irrigHistory=list.map(function(e){return {sector:e.s,dur:e.d,ts:e.t};});
   renderHistory();
 }
+function fmtDur(sec){
+  var m=Math.floor(sec/60),s=sec%60;
+  if(m>=60)return Math.floor(m/60)+'h '+(m%60)+'min';
+  if(m>0)return m+'min'+(s>0?' '+s+'s':'');
+  return s+'s';
+}
 function renderHistory(){
   var el=document.getElementById('hist-list');
-  if(!irrigHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum histórico ainda<br><br><span style="font-size:11px">⚠ Aguardando o script <code>historico_irrigacao.py</code> no Raspberry Pi</span></div>';return;}
-  el.innerHTML=irrigHistory.map(function(h){var m=Math.floor(h.dur/60),s=h.dur%60,d=m>0?m+'min '+s+'s':s+'s';return '<div class="hist-item"><div class="hist-info"><div class="hist-title">💧 Setor '+h.sector+'</div><div class="hist-time">'+h.ts+'</div></div><div class="hist-dur">'+d+'</div></div>';}).join('');
+  if(!irrigHistory.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum histórico ainda<br><br><span style="font-size:11px">⚠ Aguardando o script <code>historico_irrigacao.py</code> no Raspberry Pi</span></div>';}
+  else{
+    el.innerHTML=irrigHistory.map(function(h){return '<div class="hist-item"><div class="hist-info"><div class="hist-title">💧 Setor '+h.sector+'</div><div class="hist-time">'+escapeHtml(h.ts||'')+'</div></div><div class="hist-dur">'+fmtDur(h.dur)+'</div></div>';}).join('');
+  }
+  renderHistStats();
+}
+// v1.5: resumo — hoje (total, nº, por setor) e últimos 7 dias.
+// Timestamps do Pi no formato dd/mm/yyyy HH:MM:SS.
+function renderHistStats(){
+  var el=document.getElementById('hist-stats');if(!el)return;
+  if(!irrigHistory.length){el.textContent='—';return;}
+  var now=new Date();
+  var hoje=('0'+now.getDate()).slice(-2)+'/'+('0'+(now.getMonth()+1)).slice(-2)+'/'+now.getFullYear();
+  var limite7=now.getTime()-7*86400000;
+  var tHoje=0,nHoje=0,porSetor={},t7=0;
+  irrigHistory.forEach(function(h){
+    var dpart=(h.ts||'').split(' ')[0],p=dpart.split('/');
+    if(p.length!==3)return;
+    if(dpart===hoje){tHoje+=h.dur;nHoje++;porSetor[h.sector]=(porSetor[h.sector]||0)+h.dur;}
+    var dt=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+    if(dt.getTime()>=limite7)t7+=h.dur;
+  });
+  var chips=Object.keys(porSetor).sort().map(function(k){return '<span class="badge badge-blue">S'+k+' '+fmtDur(porSetor[k])+'</span>';}).join(' ');
+  el.innerHTML='Hoje: <b style="color:var(--text)">'+nHoje+'</b> irrigações · <b style="color:var(--green)">'+fmtDur(tHoje)+'</b><br>'
+    +(chips?chips+'<br>':'')
+    +'Últimos 7 dias: <b style="color:var(--text)">'+fmtDur(t7)+'</b>'
+    +'<br><span style="font-size:10px">(sobre os últimos registros publicados pelo Pi)</span>';
 }
 function clearHistory(){
   if(!confirm('Limpar todo o histórico? Esta ação não pode ser desfeita e afeta o histórico salvo no servidor.'))return;
   if(!client||!client.connected){toast('⚠ Sem conexão!');return;}
-  client.publish('esp32_lavoura01/irrigation/history/clear','1');
+  client.publish(T+'/irrigation/history/clear','1',{qos:1});
   toast('Comando de limpeza enviado ao servidor');
 }
 
 function renderStatus(){
   var sectors=state.sectors||[],el=document.getElementById('st-sectors');
   if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados...</div>';return;}
+  var fila=state.queue||[];
   el.innerHTML=sectors.map(function(sec){
     var active=state.current_sector==sec.id;
-    // v1.4: [] é truthy — fallback explícito por .length
-    var scheds=(cfgSchedules[sec.id]&&cfgSchedules[sec.id].length)?cfgSchedules[sec.id]:(sec.schedules||[]);
-    var enabled=cfgEnabled[sec.id]!==false&&sec.enabled!==false;
+    var naFila=fila.indexOf(sec.id)!==-1;
+    // v1.5: o status do firmware É a verdade — sem fallback de cache local
+    var scheds=sec.schedules||[];
+    var enabled=sec.enabled!==false;
     var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
     var dsec=sec.duration_sec||0;
     var durStr=dmin+'min'+(dsec>0?' '+dsec+'s':'');
-    return '<div class="sector-row"><div class="dot '+(active?'dot-active':'dot-idle')+'"></div><div style="flex:1"><div class="sector-name">'+(sec.name||'Setor '+sec.id)+'</div><div class="sector-sched">'+(scheds.length?scheds.join(', '):'Sem horário')+' · '+durStr+'</div></div>'+(active?'<span class="badge badge-ok">Irrigando</span>':!enabled?'<span class="badge badge-muted">Desativado</span>':'<span class="badge badge-muted">Aguardando</span>')+'</div>';
+    var badge=active?'<span class="badge badge-ok">Irrigando</span>'
+      :naFila?'<span class="badge badge-blue">Na fila</span>'
+      :!enabled?'<span class="badge badge-muted">Desativado</span>'
+      :'<span class="badge badge-muted">Aguardando</span>';
+    return '<div class="sector-row"><div class="dot '+(active?'dot-active':'dot-idle')+'"></div><div style="flex:1"><div class="sector-name">'+escapeHtml(sec.name||'Setor '+sec.id)+'</div><div class="sector-sched">'+(scheds.length?scheds.join(', '):'Sem horário')+' · '+durStr+'</div></div>'+badge+'</div>';
   }).join('');
 }
 
@@ -526,7 +770,7 @@ function renderManualSectors(){
     var active=state.current_sector==sec.id&&state.pump;
     return '<div class="man-card'+(active?' active':'')+'" onclick="toggleManualSector('+sec.id+')">'
       +'<div class="man-num">'+sec.id+'</div>'
-      +'<div class="man-info"><div class="man-name">'+(sec.name||'Setor '+sec.id)+'</div><div class="man-state">'+(active?'● IRRIGANDO':'desligado')+'</div></div>'
+      +'<div class="man-info"><div class="man-name">'+escapeHtml(sec.name||'Setor '+sec.id)+'</div><div class="man-state">'+(active?'● IRRIGANDO':'desligado')+'</div></div>'
       +'<div class="man-icon">'+(active?'⏸':'▶')+'</div>'
       +'</div>';
   }).join('');
@@ -535,18 +779,26 @@ function renderManualSectors(){
 function toggleManualSector(sid){
   var active=state.current_sector==sid&&state.pump;
   if(active){
-    publish({cmd:'manual_off',sector:sid});
-    toast('Setor '+sid+' desligado');
+    if(publish({cmd:'manual_off',sector:sid}))toast('Setor '+sid+' desligado');
   }else{
-    publish({cmd:'manual_on',sector:sid});
-    toast('Setor '+sid+' ligado');
+    if(publish({cmd:'manual_on',sector:sid}))toast('Setor '+sid+' ligado');
   }
 }
+
+/* ===================================================================== */
+/*  v1.5 — Multi-zonas robusto                                            */
+/*  - deadline por relógio de parede (sobrevive a throttling do browser)  */
+/*  - persistido em localStorage (sobrevive a reload — retoma sozinho)    */
+/*  - Wake Lock pra tela não apagar                                       */
+/*  - watchdog: stop_all vindo de OUTRO aparelho cancela a sequência      */
+/*    (na v1.1.3 o celular originador religava a irrigação sozinho!)      */
+/* ===================================================================== */
 
 function openMultiZonas(){
   var sectors=state.sectors||[];
   if(!sectors.length){toast('Aguardando setores do controlador...');return;}
-  if(mzSequence.running){toast('⚠ Já há uma sequência rodando! Use Parada de emergência para cancelar.');return;}
+  if(espOnline==='0'){toast('⚠ Controlador offline!');return;}
+  if(mz.running){toast('⚠ Já há uma sequência rodando! Cancele na aba Manual.');return;}
   mzSelected={};
   var grid=document.getElementById('mz-grid');
   grid.innerHTML=sectors.map(function(sec){
@@ -560,6 +812,7 @@ function toggleMzSector(sid){
   var cell=document.querySelector('#mz-grid .sec-cell[data-sid="'+sid+'"]');
   if(cell)cell.classList.toggle('on',mzSelected[sid]);
 }
+
 function executeMultiZonas(){
   var list=[];
   for(var k in mzSelected)if(mzSelected[k])list.push(parseInt(k));
@@ -569,54 +822,133 @@ function executeMultiZonas(){
   var dsec=parseInt(document.getElementById('mz-sec').value)||0;
   if(dmin===0&&dsec===0){toast('Tempo deve ser maior que zero!');return;}
   if(!client||!client.connected){toast('⚠ Sem conexão!');return;}
-  // v1.1.2: sequência gerenciada pelo app — envia manual_on/manual_off para cada setor
-  mzSequence={
-    running:true,
-    sectors:list,
-    idx:0,
-    durationMs:(dmin*60+dsec)*1000,
-    timeout:null
-  };
+  mz={running:true,sectors:list,idx:0,durationMs:(dmin*60+dsec)*1000,deadline:0,lastCmdTs:0};
   closeMultiZonas();
   toast('▶ Iniciando '+list.length+' setor(es) em sequência');
-  mzNextStep();
+  mzStartStep();
 }
 
-function mzNextStep(){
-  if(!mzSequence.running)return;
-  var total=mzSequence.sectors.length;
-  var idx=mzSequence.idx;
-  // v1.1.3: Fim da sequência — desliga o ÚLTIMO setor que ficou aberto,
-  // o que também desliga a bomba no firmware
-  if(idx>=total){
-    var lastSid=mzSequence.sectors[total-1];
-    publish({cmd:'manual_off',sector:lastSid});
-    mzSequence.running=false;
-    toast('✅ Multi-zonas concluída ('+total+' setores)');
-    return;
-  }
-  var sid=mzSequence.sectors[idx];
-  var pos=idx+1;
-  // v1.1.3: Só envia manual_on do próximo setor. O firmware fecha o anterior
-  // automaticamente e mantém a bomba ligada — troca instantânea, sem delay,
-  // sem piscar a bomba.
+// Liga o setor do passo atual e arma o deadline. O firmware fecha o setor
+// anterior automaticamente e mantém a bomba — troca instantânea (v1.1.3).
+function mzStartStep(){
+  var sid=mz.sectors[mz.idx];
   publish({cmd:'manual_on',sector:sid});
-  toast('Setor '+sid+' ('+pos+'/'+total+')');
-  mzSequence.timeout=setTimeout(function(){
-    mzSequence.idx++;
-    mzNextStep();
-  },mzSequence.durationMs);
+  mz.deadline=Date.now()+mz.durationMs;
+  mz.lastCmdTs=Date.now();
+  mzSave();mzWakeAcquire();renderMzCard();
+  toast('Setor '+sid+' ('+(mz.idx+1)+'/'+mz.sectors.length+')');
 }
 
-function mzCancel(){
-  if(mzSequence.timeout){clearTimeout(mzSequence.timeout);mzSequence.timeout=null;}
-  if(mzSequence.running){
-    // Desliga o setor que estiver ativo no momento
-    var sid=mzSequence.sectors[mzSequence.idx];
-    if(sid)publish({cmd:'manual_off',sector:sid});
+// Avança conforme o relógio de parede. Se o app ficou suspenso e perdeu
+// mais de um passo, pula direto pro passo que DEVERIA estar ativo agora
+// (sem religar os pulados) — ou encerra se o tempo total já passou.
+function mzAdvance(){
+  while(mz.running&&Date.now()>=mz.deadline){
+    mz.idx++;
+    if(mz.idx>=mz.sectors.length){mzFinish();return;}
+    mz.deadline+=mz.durationMs;
   }
-  mzSequence.running=false;
+  if(!mz.running)return;
+  var sid=mz.sectors[mz.idx];
+  publish({cmd:'manual_on',sector:sid});
+  mz.lastCmdTs=Date.now();
+  mzSave();renderMzCard();
+  toast('Setor '+sid+' ('+(mz.idx+1)+'/'+mz.sectors.length+')');
 }
+
+// Fim normal: desliga o ÚLTIMO setor aberto — o firmware desliga a bomba.
+// force=true: o manual_off final SEMPRE tenta sair, mesmo com o controlador
+// marcado offline — nunca deixar setor aberto pra trás.
+function mzFinish(){
+  var last=mz.sectors[mz.sectors.length-1];
+  publish({cmd:'manual_off',sector:last},true);
+  var n=mz.sectors.length;
+  mzStop();
+  toast('✅ Multi-zonas concluída ('+n+' setores)');
+}
+
+function mzStop(){
+  mz.running=false;
+  mzSave();mzWakeRelease();renderMzCard();
+}
+
+// Cancelamento manual pelo usuário (botão no card)
+function mzCancelUser(){
+  if(!mz.running)return;
+  var sid=mz.sectors[mz.idx];
+  publish({cmd:'manual_off',sector:sid},true);
+  mzStop();
+  toast('Sequência cancelada — setor '+sid+' desligado');
+}
+
+// v1.5: watchdog — roda a cada status. Se outro aparelho mandou stop_all
+// (ou alguém ligou outro setor manualmente), o status real diverge do
+// esperado → cancela a sequência local SEM religar nada.
+function mzWatchdog(){
+  if(!mz.running)return;
+  if(Date.now()-mz.lastCmdTs<12000)return; // carência: comando/transição em voo
+  var expected=mz.sectors[mz.idx];
+  if(!state.pump||state.current_sector!=expected){
+    mzStop();
+    toast('⚠ Sequência multi-zonas cancelada — intervenção externa detectada');
+  }
+}
+
+function mzSave(){
+  try{
+    if(mz.running)localStorage.setItem(MZ_KEY,JSON.stringify(mz));
+    else localStorage.removeItem(MZ_KEY);
+  }catch(e){}
+}
+
+// v1.5: retomada após reload/crash do navegador. Reenviar manual_on do
+// passo corrente é idempotente no firmware. Se o tempo total já passou,
+// resolve direto pro manual_off final — NUNCA deixa setor aberto pra trás.
+function mzResume(){
+  var saved=null;
+  try{saved=JSON.parse(localStorage.getItem(MZ_KEY)||'null');}catch(e){}
+  if(!saved||!saved.running)return;
+  mz=saved;
+  if(Date.now()>=mz.deadline){
+    mzAdvance();
+  }else{
+    publish({cmd:'manual_on',sector:mz.sectors[mz.idx]});
+    mz.lastCmdTs=Date.now();
+  }
+  if(mz.running){
+    toast('▶ Sequência multi-zonas retomada');
+    mzWakeAcquire();renderMzCard();
+  }
+}
+
+function renderMzCard(){
+  var card=document.getElementById('mz-card');
+  if(!mz.running){card.classList.remove('active');return;}
+  card.classList.add('active');
+  var ms=Math.max(0,mz.deadline-Date.now());
+  var s=Math.floor(ms/1000),m=Math.floor(s/60);s=s%60;
+  document.getElementById('mz-val').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  document.getElementById('mz-info').textContent='Setor '+mz.sectors[mz.idx]+' · passo '+(mz.idx+1)+' de '+mz.sectors.length;
+}
+
+/* ── Wake Lock: impede a tela de apagar durante a sequência ── */
+function mzWakeAcquire(){
+  if(!('wakeLock' in navigator))return;
+  navigator.wakeLock.request('screen').then(function(wl){wakeLock=wl;}).catch(function(){});
+}
+function mzWakeRelease(){
+  if(wakeLock){try{wakeLock.release();}catch(e){}wakeLock=null;}
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&mz.running){
+    mzWakeAcquire();
+    if(Date.now()>=mz.deadline&&client&&client.connected)mzAdvance();
+    renderMzCard();
+  }
+});
+window.addEventListener('beforeunload',function(e){
+  if(mz.running){e.preventDefault();e.returnValue='';}
+});
 
 /* ===================================================================== */
 /*  v1.1 — Aba CONFIGURAR: cards expansíveis + Copiar                     */
@@ -633,6 +965,7 @@ function renderConfigSectors(){
   if(!sectors.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div>';return;}
   el.innerHTML=sectors.map(function(sec){
     var sid=sec.id;
+    ensureSetor(sid);
     var enabled=cfgEnabled[sid]!==false&&sec.enabled!==false;
     var scheds=cfgSchedules[sid]&&cfgSchedules[sid].length?cfgSchedules[sid]:(sec.schedules||[]);
     var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
@@ -642,7 +975,7 @@ function renderConfigSectors(){
     var html='<div class="cfg-card'+(expanded?' expanded':'')+'" id="cfg-card-'+sid+'">';
     html+='<div class="cfg-head" onclick="toggleCfgExpand('+sid+')">';
     html+='<button class="toggle'+(enabled?' on':'')+'" onclick="event.stopPropagation();toggleSectorEnabled('+sid+')"></button>';
-    html+='<div class="cfg-head-info"><div class="cfg-head-name">'+(sec.name||'Setor '+sid)+'</div>';
+    html+='<div class="cfg-head-info"><div class="cfg-head-name">'+escapeHtml(sec.name||'Setor '+sid)+'</div>';
     html+='<div class="cfg-head-meta">'+durStr+' · '+(scheds.length?scheds.length+' horário'+(scheds.length>1?'s':''):'sem horário')+'</div></div>';
     html+='<div class="cfg-chev">▼</div></div>';
     if(expanded){
@@ -664,12 +997,15 @@ function renderConfigSectors(){
   }).join('');
 }
 
-function escapeAttr(s){return String(s).replace(/"/g,'&quot;');}
-
 function toggleCfgExpand(sid){
   // Fecha todos os outros (acordeão)
   for(var k in cfgExpanded)if(parseInt(k)!==sid)cfgExpanded[k]=false;
   cfgExpanded[sid]=!cfgExpanded[sid];
+  // v1.5: ao abrir pra edição, parte do estado real do firmware
+  if(cfgExpanded[sid]){
+    var sec=(state.sectors||[]).find(function(s){return s.id===sid;});
+    if(sec){cfgSchedules[sid]=(sec.schedules||[]).slice();cfgEnabled[sid]=sec.enabled!==false;}
+  }
   renderConfigSectors();
 }
 
@@ -685,11 +1021,14 @@ function toggleSectorEnabled(sid){
   var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
   var dsec=sec.duration_sec||0;
   var scheds=(cfgSchedules[sid]&&cfgSchedules[sid].length)?cfgSchedules[sid]:(sec.schedules||[]);
-  publish({cmd:'set_sector',sector:sid,name:name,duration_min:dmin,duration_sec:dsec,enabled:newEnabled,schedules:scheds});
-  if(client&&client.connected){
-    client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:sid,schedules:scheds,enabled:newEnabled}),{retain:true});
+  // v1.5: app NÃO publica mais no tópico schedule — o firmware republica
+  // retained após aplicar (e isso serve de ACK).
+  if(publish({cmd:'set_sector',sector:sid,name:name,duration_min:dmin,duration_sec:dsec,enabled:newEnabled,schedules:scheds})){
+    expectAck(sid);
+    toast('Setor '+sid+(newEnabled?' ATIVADO':' DESATIVADO'));
+  }else{
+    cfgEnabled[sid]=current; // comando não saiu — desfaz local
   }
-  toast('Setor '+sid+(newEnabled?' ATIVADO':' DESATIVADO'));
   renderConfigSectors();
   renderStatus();
 }
@@ -718,15 +1057,14 @@ function saveSectorInline(sid){
   var dmin=parseInt(document.getElementById('cfg-dmin-'+sid).value)||0;
   var dsec=parseInt(document.getElementById('cfg-dsec-'+sid).value)||0;
   var enabled=cfgEnabled[sid]!==false;
-  // v1.4: lista vazia é truthy em JS — fallback explícito por .length
-  // (cfgSchedules[sid] inicia como [] no init; sem este check o app
-  //  mandava lista vazia e o firmware apagava os horários)
-  var scheds=(cfgSchedules[sid]&&cfgSchedules[sid].length)?cfgSchedules[sid]:(sec.schedules||[]);
-  publish({cmd:'set_sector',sector:sid,name:name,duration_min:dmin,duration_sec:dsec,enabled:enabled,schedules:scheds});
-  if(client&&client.connected){
-    client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:sid,schedules:scheds,enabled:enabled}),{retain:true});
+  // v1.5: ao expandir o card o buffer parte do firmware, então aqui o
+  // cfgSchedules reflete exatamente o que o usuário vê nas tags —
+  // inclusive lista vazia de propósito (remover todos os horários).
+  var scheds=cfgSchedules[sid]||[];
+  if(publish({cmd:'set_sector',sector:sid,name:name,duration_min:dmin,duration_sec:dsec,enabled:enabled,schedules:scheds})){
+    expectAck(sid);
+    toast('Setor '+sid+' enviado — aguardando confirmação...');
   }
-  toast('✅ Setor '+sid+' salvo!');
 }
 
 /* ----- Copiar configurações (modal) ----- */
@@ -740,12 +1078,12 @@ function openCopyModal(){
   document.getElementById('copy-modal-title').textContent='Copiar — escolha a origem';
   var listEl=document.getElementById('copy-source-list');
   listEl.innerHTML=sectors.map(function(sec){
-    var scheds=cfgSchedules[sec.id]&&cfgSchedules[sec.id].length?cfgSchedules[sec.id]:(sec.schedules||[]);
+    var scheds=sec.schedules||[];
     var dmin=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
     var dsec=sec.duration_sec||0;
     return '<div class="cfg-card" style="cursor:pointer" onclick="selectCopySource('+sec.id+')">'
       +'<div class="cfg-head"><div class="man-num">'+sec.id+'</div>'
-      +'<div class="cfg-head-info"><div class="cfg-head-name">'+(sec.name||'Setor '+sec.id)+'</div>'
+      +'<div class="cfg-head-info"><div class="cfg-head-name">'+escapeHtml(sec.name||'Setor '+sec.id)+'</div>'
       +'<div class="cfg-head-meta">'+dmin+'min'+(dsec>0?' '+dsec+'s':'')+' · '+scheds.length+' horário(s)</div></div>'
       +'<div style="color:var(--green);font-size:18px">→</div></div></div>';
   }).join('');
@@ -787,21 +1125,22 @@ function executeCopy(){
   for(var k in copyTargets)if(copyTargets[k])targets.push(parseInt(k));
   if(!targets.length){toast('Selecione ao menos 1 setor de destino!');return;}
   var src=(state.sectors||[]).find(function(s){return s.id===copySource;})||{};
-  var srcSchedules=cfgSchedules[copySource]&&cfgSchedules[copySource].length?cfgSchedules[copySource]:(src.schedules||[]);
+  // v1.5: copia direto do estado real do firmware (status), não do cache
+  var srcSchedules=src.schedules||[];
   var srcDmin=src.duration_min!==undefined?src.duration_min:(src.duration||15);
   var srcDsec=src.duration_sec||0;
-  var srcEnabled=cfgEnabled[copySource]!==false&&src.enabled!==false;
+  var srcEnabled=src.enabled!==false;
   // Aplica em cada destino (mantém o nome de cada um)
   targets.forEach(function(tid){
     var tgt=(state.sectors||[]).find(function(s){return s.id===tid;})||{};
+    ensureSetor(tid);
     cfgSchedules[tid]=srcSchedules.slice();
     cfgEnabled[tid]=srcEnabled;
-    publish({cmd:'set_sector',sector:tid,name:(tgt.name||'Setor '+tid),duration_min:srcDmin,duration_sec:srcDsec,enabled:srcEnabled,schedules:srcSchedules});
-    if(client&&client.connected){
-      client.publish('esp32_lavoura01/irrigation/schedule',JSON.stringify({sector_id:tid,schedules:srcSchedules,enabled:srcEnabled}),{retain:true});
+    if(publish({cmd:'set_sector',sector:tid,name:(tgt.name||'Setor '+tid),duration_min:srcDmin,duration_sec:srcDsec,enabled:srcEnabled,schedules:srcSchedules})){
+      expectAck(tid);
     }
   });
-  toast('✅ Configurações copiadas para '+targets.length+' setor(es)');
+  toast('Copiando para '+targets.length+' setor(es) — aguardando confirmação...');
   closeCopyModal();
   renderConfigSectors();
 }
@@ -814,21 +1153,232 @@ function fillNow(){var n=new Date();document.getElementById('rtc-day').value=n.g
 function sendRTC(){
   var d={cmd:'set_rtc',day:parseInt(document.getElementById('rtc-day').value),month:parseInt(document.getElementById('rtc-month').value),year:parseInt(document.getElementById('rtc-year').value),hour:parseInt(document.getElementById('rtc-hour').value),min:parseInt(document.getElementById('rtc-min').value),sec:parseInt(document.getElementById('rtc-sec').value)};
   if(isNaN(d.day)||isNaN(d.hour)){toast('⚠ Preencha todos os campos!');return;}
-  publish(d);toast('⏰ Horário enviado para ESP32!');
+  if(publish(d))toast('⏰ Horário enviado para ESP32!');
 }
 
-function stopAll(){mzCancel();publish({cmd:'stop_all'});toast('⛔ Parada de emergência enviada!');}
-function forcarReconfig(){publish({cmd:'reset_wifi'});toast('Comando enviado! Controlador entrará em modo portal.');}
+// v1.5: parada de emergência SEMPRE tenta enviar (force=true), mesmo com
+// o controlador marcado offline — e cancela a sequência multi-zonas local.
+function stopAll(){
+  if(mz.running)mzStop();
+  publish({cmd:'stop_all'},true);
+  toast('⛔ Parada de emergência enviada!');
+}
+function forcarReconfig(){if(publish({cmd:'reset_wifi'}))toast('Comando enviado! Controlador entrará em modo portal.');}
 
 /* ===================================================================== */
-/*  Aba FERTI — curva EC por intervalo (v1.1)                              */
+/*  v1.5 — Aba SENSORES: estação meteorológica + nós de substrato         */
+/*  Regra do projeto: TODO sensor é opcional — ausente mostra "—".        */
+/*  Fase 1: observação apenas, sem nenhuma decisão de irrigação aqui.     */
 /* ===================================================================== */
+
+var METEO_ITEMS=[
+  ['temperatura','Temperatura','°C',1],
+  ['umidade','Umidade','%',0],
+  ['vpd','VPD','kPa',2],
+  ['dli_acumulado','DLI hoje','mol/m²',1],
+  ['ppfd','PPFD','µmol/m²s',0],
+  ['lux','Luz','lx',0],
+  ['pressao','Pressão','hPa',1],
+  ['ponto_orvalho','P. orvalho','°C',1],
+  ['pressao_tendencia','Tendência','',null],
+  ['vento_velocidade','Vento','m/s',1],
+  ['vento_direcao','Dir. vento','°',0],
+  ['chuva_mm_dia','Chuva hoje','mm',1]
+];
+
+function onMeteo(chave,msg){
+  if(chave==='status'){
+    try{meteoStatus=JSON.parse(msg);}catch(e){}
+  }else if(chave==='alerta'){
+    try{meteoAlerta=JSON.parse(msg);}catch(e){}
+  }else if(chave==='comando'){
+    return; // eco de comando — não é leitura
+  }else{
+    // valor numérico puro vira Number; texto (tendência, previsão) fica string
+    var num=Number(msg);
+    meteoData[chave]=(msg.trim()!==''&&!isNaN(num))?num:msg;
+  }
+  renderMeteo();renderSistema();
+}
+
+function renderMeteo(){
+  var grid=document.getElementById('meteo-grid');if(!grid)return;
+  grid.innerHTML=METEO_ITEMS.map(function(it){
+    var k=it[0],lbl=it[1],unit=it[2],dec=it[3];
+    var v=meteoData[k],txt;
+    if(v===undefined||v===null||v===''){txt='—';}
+    else if(typeof v==='number'&&dec!==null){txt=v.toFixed(dec);}
+    else{txt=escapeHtml(String(v));}
+    return '<div class="sens-item"><div class="sens-lbl">'+lbl+'</div><div class="sens-val">'+txt+(txt!=='—'&&unit?' <span class="sens-unit">'+unit+'</span>':'')+'</div></div>';
+  }).join('');
+  var prev=document.getElementById('meteo-previsao');
+  if(meteoData.previsao){prev.textContent='🌤 '+meteoData.previsao;prev.style.display='';}
+  else prev.style.display='none';
+  var al=document.getElementById('meteo-alerta');
+  if(meteoAlerta&&meteoAlerta.ativo){
+    al.innerHTML='<span class="badge badge-err">⚠ Alerta: '+escapeHtml(meteoAlerta.tipo||'')+'</span>';
+    al.style.display='';
+  }else al.style.display='none';
+  var badge=document.getElementById('meteo-online');
+  if(meteoStatus===null){badge.className='badge badge-muted';badge.textContent='—';}
+  else if(meteoStatus.online===false){badge.className='badge badge-err';badge.textContent='OFFLINE';}
+  else{badge.className='badge badge-ok';badge.textContent='ONLINE';}
+}
+
+// MicroPython usa epoch 2000 — converte pra unix quando necessário
+function tsUnix(ts){if(!ts)return null;return ts<1000000000?ts+946684800:ts;}
+
+function onSubstrato(dev,kind,msg){
+  var num=parseInt(dev.replace('substrato',''),10);
+  if(!substratos[num])substratos[num]={};
+  if(kind==='online'){substratos[num].online=(msg==='1');}
+  else{
+    try{substratos[num].dados=JSON.parse(msg);substratos[num].rx=Date.now();}catch(e){}
+  }
+  renderSubstratos();
+}
+
+function renderSubstratos(){
+  var el=document.getElementById('substrato-list');if(!el)return;
+  var nums=Object.keys(substratos).map(Number).sort(function(a,b){return a-b;});
+  if(!nums.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum nó de substrato reportando ainda</div>';return;}
+  el.innerHTML=nums.map(function(n){
+    var sub=substratos[n],d=sub.dados||{};
+    var online=sub.online!==false;
+    var idade='';
+    var tu=tsUnix(d.ts);
+    if(tu){var minAtras=Math.round((Date.now()/1000-tu)/60);idade=minAtras<1?'agora':'há '+minAtras+' min';}
+    var badges='';
+    if(d.sensor_fail)badges+=' <span class="badge badge-err">sensor falhou</span>';
+    if(d.vbat_baixa)badges+=' <span class="badge badge-warn">bateria baixa</span>';
+    var grid='<div class="sens-grid" style="margin-top:8px">'
+      +'<div class="sens-item"><div class="sens-lbl">Umidade</div><div class="sens-val">'+(d.umidade!==undefined?d.umidade.toFixed(1)+' <span class="sens-unit">%</span>':'—')+'</div></div>'
+      +'<div class="sens-item"><div class="sens-lbl">EC</div><div class="sens-val">'+(d.ec!==undefined?d.ec+' <span class="sens-unit">µS/cm</span>':'—')+'</div></div>'
+      +'<div class="sens-item"><div class="sens-lbl">Temp</div><div class="sens-val">'+(d.temp!==undefined?d.temp.toFixed(1)+' <span class="sens-unit">°C</span>':'—')+'</div></div>'
+      +'</div>';
+    var foot='<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:8px">'
+      +(d.vbat_mv!==undefined?'🔋 '+(d.vbat_mv/1000).toFixed(2)+'V':'')
+      +(d.rssi!==undefined?' · 📶 '+d.rssi+'dBm':'')
+      +(d.snr!==undefined?' · SNR '+d.snr:'')
+      +(idade?' · '+idade:'')
+      +'</div>';
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="display:flex;align-items:center;gap:8px"><div class="dot '+(online?'dot-active':'dot-off')+'"></div>'
+      +'<span class="sector-name">Substrato '+(n<10?'0':'')+n+'</span>'+badges+'</div>'
+      +grid+foot+'</div>';
+  }).join('');
+}
+
+/* ===================================================================== */
+/*  v1.5 — Sistema / OTA (aba Conexão)                                    */
+/* ===================================================================== */
+
+function fmtUptime(s){
+  if(s===undefined||s===null)return '—';
+  var d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  if(d>0)return d+'d '+h+'h';
+  if(h>0)return h+'h '+m+'m';
+  return m+'min';
+}
+
+function renderSistema(){
+  var el=document.getElementById('sys-list');if(!el)return;
+  var rows=[];
+  // Controlador
+  var tm=telemetria||{};
+  rows.push('<div class="sys-row"><div class="dot '+(espOnline==='1'?'dot-active':espOnline==='0'?'dot-off':'dot-idle')+'" style="margin-top:5px"></div>'
+    +'<div class="sys-info"><div class="sys-name">Controlador (esp32_lavoura01)</div>'
+    +'<div class="sys-meta">fw: '+escapeHtml(tm.ota_versao||'—')+' · 📶 '+(tm.wifi_rssi!==undefined&&tm.wifi_rssi!==null?tm.wifi_rssi+'dBm':'—')
+    +' · up '+fmtUptime(tm.uptime_s)
+    +(tm.heap_livre?'<br>heap '+Math.round(tm.heap_livre/1024)+'KB · reset: '+escapeHtml(tm.reset_cause||'—'):'')+'</div></div>'
+    +'<button class="btn-add" onclick="otaControlador()">⬆ OTA</button></div>');
+  // Estação
+  var ms=meteoStatus||{};
+  rows.push('<div class="sys-row"><div class="dot '+(meteoStatus===null?'dot-idle':ms.online===false?'dot-off':'dot-active')+'" style="margin-top:5px"></div>'
+    +'<div class="sys-info"><div class="sys-name">Estação meteo (esp32_estacao01)</div>'
+    +'<div class="sys-meta">📶 '+(ms.rssi!==undefined?ms.rssi+'dBm':'—')+' · up '+fmtUptime(ms.uptime)+'</div></div>'
+    +'<button class="btn-add" onclick="otaEstacao()">⬆ OTA</button></div>');
+  // Injetora
+  rows.push('<div class="sys-row"><div class="dot '+(fertiOnline==='1'?'dot-active':fertiOnline==='0'?'dot-off':'dot-idle')+'" style="margin-top:5px"></div>'
+    +'<div class="sys-info"><div class="sys-name">Injetora ferti (fertigacao)</div>'
+    +'<div class="sys-meta">'+(fertiOnline===null?'sem dados ainda':fertiOnline==='1'?'online':'offline')+'</div></div>'
+    +'<button class="btn-add" onclick="otaInjetora()">⬆ OTA</button></div>');
+  el.innerHTML=rows.join('');
+}
+
+function otaControlador(){
+  if(state.pump){toast('⚠ Controlador irrigando — aguarde o fim para OTA');return;}
+  if(!confirm('Atualizar firmware do CONTROLADOR via OTA?\n\nO controlador baixa do servidor no Pi e reinicia.'))return;
+  if(publish({cmd:'ota_update'}))toast('⬆ OTA solicitado ao controlador');
+}
+function otaEstacao(){
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return;}
+  if(!confirm('Atualizar firmware da ESTAÇÃO via OTA?'))return;
+  // Estação recebe comando como string pura (não JSON)
+  client.publish('esp32_estacao01/meteo/comando','ota_update',{qos:1});
+  toast('⬆ OTA solicitado à estação');
+}
+function otaInjetora(){
+  if(!confirm('Atualizar firmware da INJETORA via OTA?'))return;
+  if(publishFerti({cmd:'ota_update'}))toast('⬆ OTA solicitado à injetora');
+}
+
+/* ===================================================================== */
+/*  Aba FERTI — curva EC por intervalo (v1.1) + estado real (v1.5)        */
+/* ===================================================================== */
+
+var lastFertiStatus=null;
+
+function onFertiStatus(data){
+  lastFertiStatus=data;
+  renderFertiStatus();
+}
+
+function renderFertiStatus(){
+  var d=lastFertiStatus||{};
+  if(d.ec_atual!==undefined)document.getElementById('ec-atual').textContent=parseFloat(d.ec_atual).toFixed(2);
+  if(d.ec_alvo!==undefined)document.getElementById('ec-alvo').textContent=parseFloat(d.ec_alvo).toFixed(2);
+  // v1.5: par ativo / setor / PWM por bomba (contrato do fertigacao/status)
+  var extra=document.getElementById('ferti-extra');
+  var parts=[];
+  if(d.setor_ativo!==undefined&&d.setor_ativo!==null)parts.push('Setor '+d.setor_ativo);
+  if(d.par_ativo)parts.push('Par '+d.par_ativo);
+  ['a','b','c'].forEach(function(p){
+    var v=d['pwm_'+p];
+    if(v!==undefined)parts.push(p.toUpperCase()+' '+v+'%');
+  });
+  extra.textContent=parts.length?parts.join(' · '):'—';
+  var badge=document.getElementById('ferti-online-badge');
+  if(fertiOnline===null){badge.className='badge badge-muted';badge.textContent='—';}
+  else if(fertiOnline==='0'){badge.className='badge badge-err';badge.textContent='OFFLINE';}
+  else{badge.className='badge badge-ok';badge.textContent='ONLINE';}
+}
+
+// v1.5: curvas e mapeamento setor→par agora persistem em retained
+// (fertigacao/curvas) — antes, cada reload do app zerava tudo e o
+// "Salvar curva" podia apagar a curva real sem querer.
+function onFertiCurvas(d){
+  if(d.curvas){['A','B','C'].forEach(function(p){if(Array.isArray(d.curvas[p]))fertiCurvas[p]=d.curvas[p];});}
+  if(d.setores){for(var k in d.setores)fertiSetores[k]=d.setores[k];}
+  loadFertiCurva();renderFertiSetores();
+}
+function publishFertiPersist(){
+  if(!client||!client.connected)return;
+  client.publish('fertigacao/curvas',JSON.stringify({curvas:fertiCurvas,setores:fertiSetores}),{retain:true,qos:1});
+}
 
 function renderFertiSetores(){
   var sectors=state.sectors||[];if(!sectors.length)return;
-  document.getElementById('ferti-setor-config').innerHTML=sectors.map(function(sec){return '<div class="sector-row"><span class="sector-name">'+(sec.name||'Setor '+sec.id)+'</span><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px" onchange="setFertiPar('+sec.id+',this.value)">'+['A','B','C'].map(function(p){return '<option value="'+p+'"'+(fertiSetores[sec.id]===p?' selected':'')+'>Par '+p+'</option>';}).join('')+'</select></div>';}).join('');
+  document.getElementById('ferti-setor-config').innerHTML=sectors.map(function(sec){
+    ensureSetor(sec.id);
+    return '<div class="sector-row"><span class="sector-name">'+escapeHtml(sec.name||'Setor '+sec.id)+'</span><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px" onchange="setFertiPar('+sec.id+',this.value)">'+['A','B','C'].map(function(p){return '<option value="'+p+'"'+(fertiSetores[sec.id]===p?' selected':'')+'>Par '+p+'</option>';}).join('')+'</select></div>';
+  }).join('');
 }
-function setFertiPar(sid,par){fertiSetores[sid]=par;publishFerti({cmd:'set_ferti_setor',sector:sid,par:par});}
+function setFertiPar(sid,par){
+  fertiSetores[sid]=par;
+  publishFerti({cmd:'set_ferti_setor',sector:sid,par:par});
+  publishFertiPersist();
+}
 
 function loadFertiCurva(){
   var par=document.getElementById('ferti-par-select').value,curva=fertiCurvas[par]||[],el=document.getElementById('ferti-curva-list');
@@ -863,13 +1413,13 @@ function addFertiCurva(){
   loadFertiCurva();
 }
 function removeFertiCurva(par,idx){fertiCurvas[par].splice(idx,1);loadFertiCurva();}
-function saveFertiCurva(){var par=document.getElementById('ferti-par-select').value;publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});toast('Curva do Par '+par+' salva!');}
-function fertiManual(par,action){publishFerti({cmd:'ferti_manual',par:par,action:action});toast('Par '+par+' '+(action==='on'?'ligado':'desligado'));}
-
-function onEspOnline(val){
-  if(val==='0'){toast('⚠️ Controlador offline!');}
-  else{toast('✅ Controlador online!');}
+function saveFertiCurva(){
+  var par=document.getElementById('ferti-par-select').value;
+  publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});
+  publishFertiPersist();
+  toast('Curva do Par '+par+' salva!');
 }
+function fertiManual(par,action){if(publishFerti({cmd:'ferti_manual',par:par,action:action}))toast('Par '+par+' '+(action==='on'?'ligado':'desligado'));}
 
 init();
 </script>
