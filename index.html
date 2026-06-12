@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f1117">
-<title>Irrigação — Morango v1.5</title>
+<title>Irrigação — Morango v1.5.1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.5</span></div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.5.1</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -197,7 +197,7 @@ select.cfg-input{cursor:pointer}
       <div class="timer-val" id="mz-val" style="font-size:28px">00:00</div>
       <div class="timer-sector" id="mz-info">—</div>
       <button class="btn-off" style="margin-top:10px;width:100%" onclick="mzCancelUser()">✖ Cancelar sequência</button>
-      <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Mantenha o app aberto e a tela ligada até o fim</div>
+      <div id="mz-note" style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Mantenha o app aberto e a tela ligada até o fim</div>
     </div>
     <div id="manual-sectors"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div></div>
     <button class="save-btn" style="margin-top:8px" onclick="openMultiZonas()">🌊 Multi-zonas</button>
@@ -404,7 +404,7 @@ select.cfg-input{cursor:pointer}
       </div>
     </div>
     <button class="save-btn" style="margin-top:14px" onclick="executeMultiZonas()">▶ Iniciar irrigação sequencial</button>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">Os setores selecionados irrigarão um por vez na ordem crescente.<br>⚠ A sequência é controlada pelo app: mantenha-o aberto com a tela ligada.</div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">Os setores selecionados irrigarão um por vez na ordem crescente.<br>Firmware v7+: o controlador gerencia sozinho (pode fechar o app).<br>⚠ Firmware antigo: mantenha o app aberto com a tela ligada.</div>
   </div>
 </div>
 
@@ -663,6 +663,7 @@ function handleTimer(data){
     card.classList.add('active');
     var lbl='Setor '+data.current_sector;
     if(mz.running)lbl+=' · multi-zonas '+(mz.idx+1)+'/'+mz.sectors.length;
+    else if(data.mz_ativo)lbl+=' · multi-zonas';
     if(data.queue&&data.queue.length)lbl+=' · fila: '+data.queue.map(function(s){return 'S'+s;}).join(', ');
     document.getElementById('timer-sector').textContent=lbl;
   }else{
@@ -681,11 +682,9 @@ function tickUI(){
     var s=Math.floor(ms/1000),m=Math.floor(s/60);s=s%60;
     el.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
   }
-  // sequência multi-zonas
-  if(mz.running){
-    renderMzCard();
-    if(Date.now()>=mz.deadline&&client&&client.connected)mzAdvance();
-  }
+  // sequência multi-zonas (local OU nativa — card atualiza nos dois modos)
+  renderMzCard();
+  if(mz.running&&Date.now()>=mz.deadline&&client&&client.connected)mzAdvance();
   renderBanner();
 }
 
@@ -798,7 +797,7 @@ function openMultiZonas(){
   var sectors=state.sectors||[];
   if(!sectors.length){toast('Aguardando setores do controlador...');return;}
   if(espOnline==='0'){toast('⚠ Controlador offline!');return;}
-  if(mz.running){toast('⚠ Já há uma sequência rodando! Cancele na aba Manual.');return;}
+  if(mz.running||state.mz_ativo){toast('⚠ Já há uma sequência rodando! Cancele na aba Manual.');return;}
   mzSelected={};
   var grid=document.getElementById('mz-grid');
   grid.innerHTML=sectors.map(function(sec){
@@ -822,6 +821,16 @@ function executeMultiZonas(){
   var dsec=parseInt(document.getElementById('mz-sec').value)||0;
   if(dmin===0&&dsec===0){toast('Tempo deve ser maior que zero!');return;}
   if(!client||!client.connected){toast('⚠ Sem conexão!');return;}
+  // v1.5: firmware v7+ tem multi_zone NATIVO (status traz a chave mz_ativo).
+  // O ESP gerencia a sequência sozinho — o celular pode até desligar.
+  if('mz_ativo' in state){
+    if(publish({cmd:'multi_zone',sectors:list,duration_sec:dmin*60+dsec})){
+      closeMultiZonas();
+      toast('▶ Sequência enviada ao controlador ('+list.length+' setores)');
+    }
+    return;
+  }
+  // Fallback (firmware antigo): sequência cronometrada pelo app
   mz={running:true,sectors:list,idx:0,durationMs:(dmin*60+dsec)*1000,deadline:0,lastCmdTs:0};
   closeMultiZonas();
   toast('▶ Iniciando '+list.length+' setor(es) em sequência');
@@ -874,11 +883,18 @@ function mzStop(){
 
 // Cancelamento manual pelo usuário (botão no card)
 function mzCancelUser(){
-  if(!mz.running)return;
-  var sid=mz.sectors[mz.idx];
-  publish({cmd:'manual_off',sector:sid},true);
-  mzStop();
-  toast('Sequência cancelada — setor '+sid+' desligado');
+  // Modo local: desliga o setor corrente da sequência do app
+  if(mz.running){
+    var sid=mz.sectors[mz.idx];
+    publish({cmd:'manual_off',sector:sid},true);
+    mzStop();
+    toast('Sequência cancelada — setor '+sid+' desligado');
+    return;
+  }
+  // v1.5: modo nativo — stop_all encerra a sequência no firmware
+  if(state.mz_ativo){
+    if(publish({cmd:'stop_all'},true))toast('⛔ Sequência cancelada no controlador');
+  }
 }
 
 // v1.5: watchdog — roda a cada status. Se outro aparelho mandou stop_all
@@ -923,12 +939,28 @@ function mzResume(){
 
 function renderMzCard(){
   var card=document.getElementById('mz-card');
-  if(!mz.running){card.classList.remove('active');return;}
-  card.classList.add('active');
-  var ms=Math.max(0,mz.deadline-Date.now());
-  var s=Math.floor(ms/1000),m=Math.floor(s/60);s=s%60;
-  document.getElementById('mz-val').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
-  document.getElementById('mz-info').textContent='Setor '+mz.sectors[mz.idx]+' · passo '+(mz.idx+1)+' de '+mz.sectors.length;
+  // Modo local (fallback): app cronometra
+  if(mz.running){
+    card.classList.add('active');
+    var ms=Math.max(0,mz.deadline-Date.now());
+    var s=Math.floor(ms/1000),m=Math.floor(s/60);s=s%60;
+    document.getElementById('mz-val').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+    document.getElementById('mz-info').textContent='Setor '+mz.sectors[mz.idx]+' · passo '+(mz.idx+1)+' de '+mz.sectors.length;
+    document.getElementById('mz-note').textContent='Mantenha o app aberto e a tela ligada até o fim';
+    return;
+  }
+  // v1.5: modo nativo — o ESP gerencia; mostramos restante + fila do status
+  if(state.mz_ativo){
+    card.classList.add('active');
+    var ms2=remainUntil?Math.max(0,remainUntil-Date.now()):0;
+    var s2=Math.floor(ms2/1000),m2=Math.floor(s2/60);s2=s2%60;
+    document.getElementById('mz-val').textContent=(m2<10?'0':'')+m2+':'+(s2<10?'0':'')+s2;
+    var fila=(state.queue||[]).map(function(x){return 'S'+x;}).join(', ');
+    document.getElementById('mz-info').textContent='Setor '+(state.current_sector||'—')+(fila?' · na fila: '+fila:' · último setor');
+    document.getElementById('mz-note').textContent='Gerenciada pelo controlador — pode fechar o app';
+    return;
+  }
+  card.classList.remove('active');
 }
 
 /* ── Wake Lock: impede a tela de apagar durante a sequência ── */
