@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f1117">
-<title>Irrigação — Morango v1.5.1</title>
+<title>Irrigação — Morango v1.6</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.5.1</span></div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.6</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -268,6 +268,14 @@ select.cfg-input{cursor:pointer}
       <!-- v1.5: par ativo + PWM por par, do fertigacao/status -->
       <div id="ferti-extra" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:12px">—</div>
     </div>
+
+    <!-- v1.6: Tambores — nível, alarme 10%/5% e botão "reabasteci" -->
+    <div class="card">
+      <div class="card-title">Tambores (estoque)</div>
+      <div id="tambores-list"><div style="color:var(--muted);font-size:13px">Aguardando dados da injetora...</div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5">A injetora subtrai o volume dosado via sensor de fluxo. Toque em "Reabasteci" depois de trocar o tambor — isso zera o alarme.</div>
+    </div>
+
     <div class="card"><div class="card-title">Par por setor</div><div id="ferti-setor-config"><div style="color:var(--muted);font-size:13px">Aguardando setores...</div></div></div>
     <div class="card">
       <div class="card-title">Curva EC — <select id="ferti-par-select" onchange="loadFertiCurva()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700"><option value="A">Par A</option><option value="B">Par B</option><option value="C">Par C</option></select></div>
@@ -1384,6 +1392,51 @@ function renderFertiStatus(){
   if(fertiOnline===null){badge.className='badge badge-muted';badge.textContent='—';}
   else if(fertiOnline==='0'){badge.className='badge badge-err';badge.textContent='OFFLINE';}
   else{badge.className='badge badge-ok';badge.textContent='ONLINE';}
+  renderTambores(d);
+}
+
+/* ===================================================================== */
+/*  v1.6 — Tambores: nível por bomba + 2 níveis de alarme (10%/5%)        */
+/*  Dados vêm do fertigacao/status: tambores{bomba:{capacidade_l,         */
+/*  restante_l}}, tambor_alarme{bomba:nivel_pct}.                         */
+/*  Comando "Reabasteci" = MQTT {"cmd":"tambor_cheio","bomba":"X","litros":N}*/
+/* ===================================================================== */
+var BOMBA_ORDEM=['A1','A2','B1','B2','C1','C2'];
+function renderTambores(d){
+  var el=document.getElementById('tambores-list');if(!el)return;
+  var tb=(d&&d.tambores)||{};
+  var alarmes=(d&&d.tambor_alarme)||{};
+  var alguma=BOMBA_ORDEM.some(function(k){return tb[k]&&tb[k].capacidade_l>0;});
+  if(!alguma){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum tambor configurado ainda</div>';return;}
+  el.innerHTML=BOMBA_ORDEM.map(function(k){
+    var t=tb[k]||{capacidade_l:0,restante_l:0};
+    var cap=t.capacidade_l||0,rest=t.restante_l||0;
+    if(cap<=0)return ''; // bomba sem tambor cadastrado
+    var pct=cap>0?Math.max(0,Math.min(100,rest/cap*100)):0;
+    var nv=alarmes[k]||null; // 10 ou 5 quando crítico
+    var cor=nv===5?'var(--red)':nv===10?'var(--amber)':'var(--green)';
+    var emoji=nv===5?'🚨':nv===10?'⚠️':'🟢';
+    return '<div style="padding:11px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<div style="font-family:var(--mono);font-weight:800;font-size:14px;width:30px">'+k+'</div>'
+        +'<div style="flex:1;font-size:12px;color:var(--muted)">'+emoji+' '+rest.toFixed(1)+' / '+cap+' L · '+pct.toFixed(0)+'%</div>'
+        +'<button class="btn-on" onclick="tamborCheio(\''+k+'\','+cap+')">Reabasteci</button>'
+      +'</div>'
+      +'<div style="height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-top:7px">'
+        +'<div style="height:100%;width:'+pct+'%;background:'+cor+';transition:width .3s"></div>'
+      +'</div>'
+      +(nv?'<div style="font-size:10px;color:'+cor+';font-weight:700;margin-top:5px">ALARME — abaixo de '+nv+'% da capacidade</div>':'')
+      +'</div>';
+  }).filter(function(x){return x;}).join('');
+}
+
+function tamborCheio(bomba,capacidade){
+  var litros=prompt('Quantos litros foram colocados no tambor '+bomba+'?\n(deixe vazio pra usar a capacidade nominal: '+capacidade+' L)','');
+  if(litros===null)return;
+  litros=litros.trim();
+  var payload={cmd:'tambor_cheio',bomba:bomba};
+  if(litros!==''){var n=parseFloat(litros);if(isNaN(n)||n<=0){toast('Valor inválido');return;}payload.litros=n;}
+  if(publishFerti(payload))toast('🛢 Tambor '+bomba+(litros?' = '+litros+' L':' (capacidade nominal)'));
 }
 
 // v1.5: curvas e mapeamento setor→par agora persistem em retained
