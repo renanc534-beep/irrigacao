@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f1117">
-<title>Irrigação — Morango v1.6</title>
+<title>Irrigação — Morango v1.7</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -267,6 +267,14 @@ select.cfg-input{cursor:pointer}
       </div>
       <!-- v1.5: par ativo + PWM por par, do fertigacao/status -->
       <div id="ferti-extra" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:12px">—</div>
+      <!-- v1.7: toggle global pra parar a injetora sem mexer setor a setor.
+           Quando OFF, modo AUTO ignora dosagem (irriga sem ferti). Manual ainda funciona. -->
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="checkbox" id="ferti-global-hab" onchange="toggleFertiGlobal(this.checked)" checked> Injetora habilitada
+        </label>
+        <span style="font-size:11px;color:var(--muted)">desligue pra irrigar sem dosar adubo</span>
+      </div>
     </div>
 
     <!-- v1.6: Tambores — nível, alarme 10%/5% e botão "reabasteci" -->
@@ -277,20 +285,38 @@ select.cfg-input{cursor:pointer}
     </div>
 
     <div class="card"><div class="card-title">Par por setor</div><div id="ferti-setor-config"><div style="color:var(--muted);font-size:13px">Aguardando setores...</div></div></div>
+    <!-- v1.7: curva agora eh POR SETOR (antes era por par). Permite mesma
+         receita rodar em setores com EC alvo distinto. Add: editar/copiar/colar. -->
     <div class="card">
-      <div class="card-title">Curva EC — <select id="ferti-par-select" onchange="loadFertiCurva()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700"><option value="A">Par A</option><option value="B">Par B</option><option value="C">Par C</option></select></div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span>Curva EC —</span>
+        <select id="ferti-setor-select" onchange="loadFertiCurva()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700">
+          <option value="">—</option>
+        </select>
+        <label style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="ferti-setor-hab" onchange="toggleFertiSetorHab(this.checked)"> ferti habilitada
+        </label>
+      </div>
       <div id="ferti-curva-list"></div>
       <!-- v1.1: intervalo (início → fim) em vez de ponto único -->
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.7px;margin-top:14px;margin-bottom:6px">Adicionar intervalo</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.7px;margin-top:14px;margin-bottom:6px">
+        <span id="ferti-add-label">Adicionar intervalo</span>
+      </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <input class="sched-input" id="ferti-hora-inicio" placeholder="07:30" style="width:75px">
         <span style="color:var(--muted);font-family:var(--mono)">→</span>
         <input class="sched-input" id="ferti-hora-fim" placeholder="10:00" style="width:75px">
         <input class="sched-input" id="ferti-ec-val" type="number" placeholder="EC" step="0.1" min="0" max="10" style="width:65px">
-        <button class="btn-add" onclick="addFertiCurva()">+ Add</button>
+        <button class="btn-add" id="ferti-add-btn" onclick="addFertiCurva()">+ Add</button>
+        <button class="btn-off" id="ferti-cancel-btn" onclick="cancelEditFerti()" style="display:none;padding:6px 10px;font-size:12px">Cancelar</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">Fora dos intervalos: sem fertirrigação (EC=0)</div>
-      <button class="save-btn" style="margin-top:10px" onclick="saveFertiCurva()">Salvar curva</button>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="save-btn" onclick="saveFertiCurva()">Salvar curva</button>
+        <button class="btn-on" onclick="copyFertiCurva()" title="Copia a curva atual do setor pra colar em outro">📋 Copiar</button>
+        <button class="btn-on" id="ferti-paste-btn" onclick="pasteFertiCurva()" disabled title="Cola no setor atual a curva copiada (substitui)">📥 Colar</button>
+      </div>
+      <div id="ferti-clip-info" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
     </div>
     <div class="card">
       <div class="card-title">Controle manual</div>
@@ -423,7 +449,15 @@ var T='esp32_lavoura01';
 var client=null;
 var state={sectors:[],pump:false,current_sector:null,datetime:''};
 var cfgSchedules={},cfgEnabled={},cfgExpanded={};
-var fertiCurvas={A:[],B:[],C:[]},fertiSetores={};
+// v1.7 (2026-06-13): curva agora vive POR SETOR (antes era por par).
+// fertiCurvas indexada pelo sector_id (string) — ex: {"1":[...], "2":[...]}.
+// fertiSetoresHab = {sid: bool} (ferti habilitada por setor).
+// fertiGlobalHab = bool (toggle global da injetora).
+var fertiCurvas={},fertiSetores={},fertiSetoresHab={},fertiGlobalHab=true;
+// Clipboard interno pra copiar/colar curva entre setores
+var fertiClip=null,fertiClipFrom=null;
+// Edicao inline: idx do intervalo sendo editado no setor atual (null = add normal)
+var fertiEditIdx=null;
 var irrigHistory=[]; // v1.4: vem do script no Pi via MQTT (tópico irrigation/history retain)
 var timerStart=null,timerSector=null,remainUntil=null;
 // v1.1: estados dos modais
@@ -451,6 +485,8 @@ function ensureSetor(sid){
   if(!(sid in cfgEnabled))cfgEnabled[sid]=true;
   if(!(sid in cfgExpanded))cfgExpanded[sid]=false;
   if(!(sid in fertiSetores))fertiSetores[sid]='A';
+  if(!(sid in fertiCurvas))fertiCurvas[sid]=[];
+  if(!(sid in fertiSetoresHab))fertiSetoresHab[sid]=true;
 }
 
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -480,7 +516,7 @@ function showTab(name,el){
   if(name==='historico')renderHistory();
   if(name==='sensores'){renderMeteo();renderSubstratos();}
   if(name==='conn')renderSistema();
-  if(name==='ferti'){renderFertiSetores();loadFertiCurva();renderFertiStatus();}
+  if(name==='ferti'){populateSetorSelect();renderFertiSetores();loadFertiCurva();renderFertiStatus();}
 }
 
 var toastTimer;
@@ -632,6 +668,12 @@ function onStatus(data){
   renderSistema();
   // v1.1.2: NÃO chamamos renderConfigSectors aqui — o status chega a cada 1-2s
   // e re-renderizar destrói inputs que o usuário está editando.
+  // v1.7: se a aba ferti esta aberta, repopula o select de setores
+  // (lista de setores vem do controlador, nao da injetora).
+  if(document.getElementById('tab-ferti').style.display!=='none'){
+    populateSetorSelect();
+    renderFertiSetores();
+  }
 }
 
 // v1.5: onSchedule agora também é o ACK do set_sector — o firmware
@@ -1392,6 +1434,28 @@ function renderFertiStatus(){
   if(fertiOnline===null){badge.className='badge badge-muted';badge.textContent='—';}
   else if(fertiOnline==='0'){badge.className='badge badge-err';badge.textContent='OFFLINE';}
   else{badge.className='badge badge-ok';badge.textContent='ONLINE';}
+  // v1.7: status traz `setores` com curva+ferti_habilitada embutidas e
+  // `ferti_habilitada` global. Fonte de verdade — sobrescreve cache local.
+  if(Array.isArray(d.setores)){
+    d.setores.forEach(function(s){
+      var sid=String(s.id);
+      ensureSetor(s.id);
+      if(s.par)fertiSetores[sid]=s.par;
+      if(Array.isArray(s.curva))fertiCurvas[sid]=s.curva;
+      if(typeof s.ferti_habilitada!=='undefined')fertiSetoresHab[sid]=!!s.ferti_habilitada;
+    });
+  }
+  if(typeof d.ferti_habilitada!=='undefined'){
+    fertiGlobalHab=!!d.ferti_habilitada;
+    var gh=document.getElementById('ferti-global-hab');
+    if(gh)gh.checked=fertiGlobalHab;
+  }
+  // Re-render aba se aberta (selects, lista de curva, etc.)
+  if(document.getElementById('tab-ferti').style.display!=='none'){
+    populateSetorSelect();
+    renderFertiSetores();
+    loadFertiCurva();
+  }
   renderTambores(d);
 }
 
@@ -1439,17 +1503,34 @@ function tamborCheio(bomba,capacidade){
   if(publishFerti(payload))toast('🛢 Tambor '+bomba+(litros?' = '+litros+' L':' (capacidade nominal)'));
 }
 
-// v1.5: curvas e mapeamento setor→par agora persistem em retained
-// (fertigacao/curvas) — antes, cada reload do app zerava tudo e o
-// "Salvar curva" podia apagar a curva real sem querer.
+// v1.7: curvas vivem em `fertigacao/status` (campo `setores`, ja com
+// curva+ferti_habilitada embutidas por setor). O cache retained
+// `fertigacao/curvas` virou legado — ignoramos formatos antigos (chaves
+// A/B/C) pra nao reintroduzir curva por par. Persistencia eh feita pelo
+// firmware no config.json — comandos MQTT sao a fonte de verdade.
 function onFertiCurvas(d){
-  if(d.curvas){['A','B','C'].forEach(function(p){if(Array.isArray(d.curvas[p]))fertiCurvas[p]=d.curvas[p];});}
-  if(d.setores){for(var k in d.setores)fertiSetores[k]=d.setores[k];}
-  loadFertiCurva();renderFertiSetores();
+  // Backwards-compat: aceita formato novo (curvas indexadas por sid),
+  // ignora silenciosamente o formato antigo (A/B/C).
+  if(d&&d.curvas){
+    for(var k in d.curvas){
+      if(/^[0-9]+$/.test(k)&&Array.isArray(d.curvas[k])&&!fertiCurvas[k])
+        fertiCurvas[k]=d.curvas[k];
+    }
+  }
+  if(d&&d.setores){for(var k2 in d.setores)if(!fertiSetores[k2])fertiSetores[k2]=d.setores[k2];}
+  populateSetorSelect();
+  loadFertiCurva();
+  renderFertiSetores();
 }
-function publishFertiPersist(){
-  if(!client||!client.connected)return;
-  client.publish('fertigacao/curvas',JSON.stringify({curvas:fertiCurvas,setores:fertiSetores}),{retain:true,qos:1});
+
+function populateSetorSelect(){
+  var sel=document.getElementById('ferti-setor-select');if(!sel)return;
+  var sectors=state.sectors||[];
+  var atual=sel.value;
+  sel.innerHTML=sectors.length
+    ? sectors.map(function(s){return '<option value="'+s.id+'">'+escapeHtml(s.name||'Setor '+s.id)+'</option>';}).join('')
+    : '<option value="">—</option>';
+  if(atual&&sectors.some(function(s){return String(s.id)===atual;}))sel.value=atual;
 }
 
 function renderFertiSetores(){
@@ -1462,48 +1543,150 @@ function renderFertiSetores(){
 function setFertiPar(sid,par){
   fertiSetores[sid]=par;
   publishFerti({cmd:'set_ferti_setor',sector:sid,par:par});
-  publishFertiPersist();
 }
 
+// ── Toggles ferti habilitada (global e por setor) ──────────────
+function toggleFertiGlobal(on){
+  fertiGlobalHab=!!on;
+  if(publishFerti({cmd:'set_ferti_global',on:fertiGlobalHab}))
+    toast(on?'✅ Injetora habilitada':'⏸ Injetora pausada (irriga sem dosar)');
+}
+function toggleFertiSetorHab(on){
+  var sid=document.getElementById('ferti-setor-select').value;
+  if(!sid)return;
+  fertiSetoresHab[sid]=!!on;
+  if(publishFerti({cmd:'set_ferti_setor_habilita',setor:Number(sid),on:!!on}))
+    toast('Setor '+sid+': ferti '+(on?'habilitada':'desabilitada'));
+}
+
+// ── Curva por setor ────────────────────────────────────────────
 function loadFertiCurva(){
-  var par=document.getElementById('ferti-par-select').value,curva=fertiCurvas[par]||[],el=document.getElementById('ferti-curva-list');
+  var sel=document.getElementById('ferti-setor-select');if(!sel)return;
+  var sid=sel.value;
+  var hab=document.getElementById('ferti-setor-hab');
+  if(hab)hab.checked=!!(sid&&fertiSetoresHab[sid]!==false);
+  // Sai do modo edit ao trocar de setor
+  cancelEditFerti(true);
+  var curva=fertiCurvas[sid]||[],el=document.getElementById('ferti-curva-list');
+  if(!sid){el.innerHTML='<div style="font-size:12px;color:var(--muted);margin:6px 0">Selecione um setor</div>';return;}
   if(!curva.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);margin:6px 0">Nenhum intervalo configurado</div>';return;}
   el.innerHTML=curva.map(function(item,idx){
     return '<div class="ec-interval">'
-      +'<span class="ec-time">'+item.inicio+'</span>'
+      +'<span class="ec-time">'+(item.inicio||item.hora_inicio||'')+'</span>'
       +'<span class="ec-arrow">→</span>'
-      +'<span class="ec-time">'+item.fim+'</span>'
+      +'<span class="ec-time">'+(item.fim||item.hora_fim||'')+'</span>'
       +'<span class="ec-val">EC '+parseFloat(item.ec).toFixed(2)+' mS/cm</span>'
-      +'<button class="btn-off" style="padding:4px 10px;font-size:12px" onclick="removeFertiCurva(\''+par+'\','+idx+')">×</button>'
+      +'<button class="btn-on" style="padding:4px 9px;font-size:12px" onclick="editFertiCurva('+idx+')">✏</button>'
+      +'<button class="btn-off" style="padding:4px 10px;font-size:12px" onclick="removeFertiCurva(\''+sid+'\','+idx+')">×</button>'
       +'</div>';
   }).join('');
 }
 
-function addFertiCurva(){
-  var par=document.getElementById('ferti-par-select').value;
+function _intervaloDoForm(){
   var inicio=document.getElementById('ferti-hora-inicio').value.trim();
   var fim=document.getElementById('ferti-hora-fim').value.trim();
   var ec=parseFloat(document.getElementById('ferti-ec-val').value);
-  if(!/^\d{2}:\d{2}$/.test(inicio)||!/^\d{2}:\d{2}$/.test(fim)){toast('Use HH:MM nas duas horas!');return;}
-  if(isNaN(ec)||ec<0||ec>10){toast('EC inválido (0-10)!');return;}
-  if(inicio>=fim){toast('Hora fim deve ser maior que início!');return;}
-  // Detecta sobreposição com intervalos existentes
-  var overlap=(fertiCurvas[par]||[]).some(function(it){return !(fim<=it.inicio||inicio>=it.fim);});
-  if(overlap){toast('⚠ Esse horário se sobrepõe a outro intervalo!');return;}
-  fertiCurvas[par].push({inicio:inicio,fim:fim,ec:ec});
-  fertiCurvas[par].sort(function(a,b){return a.inicio.localeCompare(b.inicio);});
+  if(!/^\d{2}:\d{2}$/.test(inicio)||!/^\d{2}:\d{2}$/.test(fim)){toast('Use HH:MM nas duas horas!');return null;}
+  if(isNaN(ec)||ec<0||ec>10){toast('EC inválido (0-10)!');return null;}
+  if(inicio>=fim){toast('Hora fim deve ser maior que início!');return null;}
+  return {inicio:inicio,fim:fim,ec:ec};
+}
+function _limpaForm(){
   document.getElementById('ferti-hora-inicio').value='';
   document.getElementById('ferti-hora-fim').value='';
   document.getElementById('ferti-ec-val').value='';
+}
+
+function addFertiCurva(){
+  var sid=document.getElementById('ferti-setor-select').value;
+  if(!sid){toast('Selecione um setor');return;}
+  var item=_intervaloDoForm();if(!item)return;
+  ensureSetor(Number(sid));
+  var curva=fertiCurvas[sid];
+  // Detecta sobreposição (ignora o item em edicao, se for o caso)
+  var overlap=curva.some(function(it,i){
+    if(fertiEditIdx!==null&&i===fertiEditIdx)return false;
+    var ini2=it.inicio||it.hora_inicio||'',fim2=it.fim||it.hora_fim||'';
+    return !(item.fim<=ini2||item.inicio>=fim2);
+  });
+  if(overlap){toast('⚠ Esse horário se sobrepõe a outro intervalo!');return;}
+  if(fertiEditIdx!==null){
+    curva[fertiEditIdx]=item;
+    fertiEditIdx=null;
+  }else{
+    curva.push(item);
+  }
+  curva.sort(function(a,b){
+    return (a.inicio||a.hora_inicio||'').localeCompare(b.inicio||b.hora_inicio||'');
+  });
+  _limpaForm();
+  cancelEditFerti(true);
   loadFertiCurva();
 }
-function removeFertiCurva(par,idx){fertiCurvas[par].splice(idx,1);loadFertiCurva();}
-function saveFertiCurva(){
-  var par=document.getElementById('ferti-par-select').value;
-  publishFerti({cmd:'set_ferti_curva',par:par,curva:fertiCurvas[par]});
-  publishFertiPersist();
-  toast('Curva do Par '+par+' salva!');
+
+function editFertiCurva(idx){
+  var sid=document.getElementById('ferti-setor-select').value;
+  var item=(fertiCurvas[sid]||[])[idx];if(!item)return;
+  document.getElementById('ferti-hora-inicio').value=item.inicio||item.hora_inicio||'';
+  document.getElementById('ferti-hora-fim').value=item.fim||item.hora_fim||'';
+  document.getElementById('ferti-ec-val').value=item.ec;
+  fertiEditIdx=idx;
+  document.getElementById('ferti-add-label').textContent='Editando intervalo';
+  document.getElementById('ferti-add-btn').textContent='Salvar edição';
+  document.getElementById('ferti-cancel-btn').style.display='';
 }
+function cancelEditFerti(silent){
+  fertiEditIdx=null;
+  document.getElementById('ferti-add-label').textContent='Adicionar intervalo';
+  document.getElementById('ferti-add-btn').textContent='+ Add';
+  document.getElementById('ferti-cancel-btn').style.display='none';
+  if(!silent)_limpaForm();
+}
+
+function removeFertiCurva(sid,idx){
+  (fertiCurvas[sid]||[]).splice(idx,1);
+  if(fertiEditIdx===idx)cancelEditFerti(true);
+  loadFertiCurva();
+}
+
+function saveFertiCurva(){
+  var sid=document.getElementById('ferti-setor-select').value;
+  if(!sid){toast('Selecione um setor');return;}
+  // Normaliza pro formato que o firmware espera (hora_inicio/hora_fim)
+  var curva=(fertiCurvas[sid]||[]).map(function(it){
+    return {
+      hora_inicio: it.hora_inicio||it.inicio||'00:00',
+      hora_fim:    it.hora_fim||it.fim||'00:00',
+      ec:          parseFloat(it.ec)||0
+    };
+  });
+  if(publishFerti({cmd:'salvar_curva',setor:Number(sid),curva:curva}))
+    toast('Curva do Setor '+sid+' salva!');
+}
+
+// ── Copiar / colar curva entre setores ─────────────────────────
+function copyFertiCurva(){
+  var sid=document.getElementById('ferti-setor-select').value;
+  if(!sid){toast('Selecione um setor');return;}
+  fertiClip=JSON.parse(JSON.stringify(fertiCurvas[sid]||[]));
+  fertiClipFrom=sid;
+  document.getElementById('ferti-paste-btn').disabled=false;
+  document.getElementById('ferti-clip-info').textContent=
+    '📋 Copiado: '+fertiClip.length+' intervalo(s) do Setor '+sid;
+  toast('Curva copiada');
+}
+function pasteFertiCurva(){
+  if(!fertiClip){toast('Nada copiado ainda');return;}
+  var sid=document.getElementById('ferti-setor-select').value;
+  if(!sid){toast('Selecione um setor');return;}
+  if(String(fertiClipFrom)===String(sid)){toast('Mesmo setor — sem efeito');return;}
+  if(!confirm('Substituir a curva do Setor '+sid+' pela curva copiada do Setor '+fertiClipFrom+'?\nLembre de tocar "Salvar curva" depois.'))return;
+  fertiCurvas[sid]=JSON.parse(JSON.stringify(fertiClip));
+  cancelEditFerti(true);
+  loadFertiCurva();
+  toast('Curva colada — confirme tocando em Salvar');
+}
+
 function fertiManual(par,action){if(publishFerti({cmd:'ferti_manual',par:par,action:action}))toast('Par '+par+' '+(action==='on'?'ligado':'desligado'));}
 
 init();
