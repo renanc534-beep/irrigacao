@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f1117">
-<title>Irrigação — Morango v1.7</title>
+<title>Irrigação — Morango v1.6</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1268,6 +1268,20 @@ var METEO_ITEMS=[
   ['chuva_mm_dia','Chuva hoje','mm',1]
 ];
 
+// condicao = nowcast (lux agora) + previsao por pressao, decidido no firmware.
+// Cai pra 'previsao' crua se a estacao ainda nao publica condicao.
+var CONDICAO_TXT={
+  ensolarado:{icon:'☀️',txt:'Ensolarado'},
+  parcial:{icon:'🌤',txt:'Parcialmente nublado'},
+  nublado:{icon:'☁️',txt:'Nublado'},
+  nevoa:{icon:'🌫️',txt:'Névoa / orvalho'},
+  estavel:{icon:'⛅',txt:'Tempo estável'},
+  tempo_melhorando:{icon:'🌤',txt:'Tempo melhorando'},
+  chuva_provavel:{icon:'🌧️',txt:'Chuva provável (6–12h)'},
+  tempestade_provavel:{icon:'⛈️',txt:'Tempestade provável (3–6h)'},
+  coletando_dados:{icon:'⏳',txt:'Coletando dados (3h)'}
+};
+
 function onMeteo(chave,msg){
   if(chave==='status'){
     try{meteoStatus=JSON.parse(msg);}catch(e){}
@@ -1294,7 +1308,10 @@ function renderMeteo(){
     return '<div class="sens-item"><div class="sens-lbl">'+lbl+'</div><div class="sens-val">'+txt+(txt!=='—'&&unit?' <span class="sens-unit">'+unit+'</span>':'')+'</div></div>';
   }).join('');
   var prev=document.getElementById('meteo-previsao');
-  if(meteoData.previsao){prev.textContent='🌤 '+meteoData.previsao;prev.style.display='';}
+  var cnd=meteoData.condicao||meteoData.previsao;
+  var ci=CONDICAO_TXT[cnd];
+  if(ci){prev.textContent=ci.icon+' '+ci.txt;prev.style.display='';}
+  else if(cnd){prev.textContent='🌤 '+cnd;prev.style.display='';}
   else prev.style.display='none';
   var al=document.getElementById('meteo-alerta');
   if(meteoAlerta&&meteoAlerta.ativo){
