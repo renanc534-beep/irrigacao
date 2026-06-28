@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f1117">
-<title>Irrigação — Morango v1.6</title>
+<title>Irrigação — Morango v1.7.5</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.6</span></div>
+    <div class="header-title">🌱 Irrigação <span class="version-tag">v1.7.5</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -218,6 +218,12 @@ select.cfg-input{cursor:pointer}
       <div class="sens-grid" id="meteo-grid"></div>
       <div id="meteo-previsao" style="font-size:12px;color:var(--blue);font-weight:700;margin-top:10px;display:none"></div>
       <div id="meteo-alerta" style="margin-top:10px;display:none"></div>
+    </div>
+    <!-- Horas de frio (morango) — acumulado pelo serviço frio_morango.py no Pi -->
+    <div class="card">
+      <div class="card-title">❄ Horas de frio — morango <span class="badge badge-muted" id="frio-badge" style="float:right">—</span></div>
+      <div id="frio-content"><div style="color:var(--muted);font-size:13px">Aguardando dados de frio do Pi...</div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5">Horas com temperatura ≤ <span id="frio-limiar">7,2</span> °C acumuladas na temporada. Quebra a dormência e garante brotação/frutificação uniformes.</div>
     </div>
     <div class="card">
       <div class="card-title">Substrato (nós LoRa)</div>
@@ -447,6 +453,7 @@ select.cfg-input{cursor:pointer}
 <script>
 var T='esp32_lavoura01';
 var client=null;
+var mqttUser='webapp'; // usuário MQTT conectado (pra montar <user>/frio_comando)
 var state={sectors:[],pump:false,current_sector:null,datetime:''};
 var cfgSchedules={},cfgEnabled={},cfgExpanded={};
 // v1.7 (2026-06-13): curva agora vive POR SETOR (antes era por par).
@@ -468,6 +475,7 @@ var espOnline=null,lastStatusTs=null,lastStatusDatetime='';
 var telemetria=null;
 var fertiOnline=null;
 var meteoData={},meteoStatus=null,meteoAlerta=null;
+var frioData=null; // {limiar_c,meta_h,seed_h,total_h,dias:[{d,h}],atualizado}
 var substratos={};
 // v1.5: ACK de set_sector — firmware republica o schedule após aplicar
 var pendingAcks={};
@@ -514,7 +522,7 @@ function showTab(name,el){
   if(name==='config')renderConfigSectors();
   if(name==='manual')renderManualSectors();
   if(name==='historico')renderHistory();
-  if(name==='sensores'){renderMeteo();renderSubstratos();}
+  if(name==='sensores'){renderMeteo();renderSubstratos();renderFrio();}
   if(name==='conn')renderSistema();
   if(name==='ferti'){populateSetorSelect();renderFertiSetores();loadFertiCurva();renderFertiStatus();}
 }
@@ -527,6 +535,7 @@ function connect(){
   var port=parseInt(document.getElementById('inp-port').value);
   var user=document.getElementById('inp-user').value.trim();
   var pass=document.getElementById('inp-pass').value.trim();
+  mqttUser=user||'webapp';
   if(!broker){toast('Preencha o broker!');return;}
   if(!pass){toast('Preencha a senha!');return;}
   localStorage.setItem('mqtt_cfg',JSON.stringify({broker:broker,port:port,user:user,pass:pass}));
@@ -1287,7 +1296,10 @@ function onMeteo(chave,msg){
     try{meteoStatus=JSON.parse(msg);}catch(e){}
   }else if(chave==='alerta'){
     try{meteoAlerta=JSON.parse(msg);}catch(e){}
-  }else if(chave==='comando'){
+  }else if(chave==='frio_historico'){
+    try{frioData=JSON.parse(msg);}catch(e){}
+    renderFrio();return;
+  }else if(chave==='comando'||chave==='frio_comando'){
     return; // eco de comando — não é leitura
   }else{
     // valor numérico puro vira Number; texto (tendência, previsão) fica string
@@ -1322,6 +1334,97 @@ function renderMeteo(){
   if(meteoStatus===null){badge.className='badge badge-muted';badge.textContent='—';}
   else if(meteoStatus.online===false){badge.className='badge badge-err';badge.textContent='OFFLINE';}
   else{badge.className='badge badge-ok';badge.textContent='ONLINE';}
+}
+
+/* ===================================================================== */
+/*  Horas de frio (morango) — chart SVG do histórico publicado pelo Pi    */
+/* ===================================================================== */
+function publishFrioCmd(obj){
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return false;}
+  // webapp só pode escrever no próprio prefixo (ACL pattern %u/#); o serviço
+  // frio_morango.py (admin) assina +/frio_comando.
+  client.publish((mqttUser||'webapp')+'/frio_comando',JSON.stringify(obj),{qos:1});
+  return true;
+}
+
+function renderFrio(){
+  var el=document.getElementById('frio-content');if(!el)return;
+  // não re-renderiza enquanto o usuário digita nos ajustes (destruiria o input)
+  var ae=document.activeElement;
+  if(ae&&(ae.id==='frio-seed'||ae.id==='frio-meta'))return;
+  var badge=document.getElementById('frio-badge');
+  var f=frioData;
+  if(!f){if(badge){badge.className='badge badge-muted';badge.textContent='—';}
+    el.innerHTML='<div style="color:var(--muted);font-size:13px">Aguardando dados de frio do Pi...</div>';return;}
+  var lim=document.getElementById('frio-limiar');
+  if(lim&&f.limiar_c!==undefined)lim.textContent=String(f.limiar_c).replace('.',',');
+
+  var total=f.total_h||0, meta=f.meta_h||200;
+  var pct=Math.max(0,Math.min(100,meta>0?total/meta*100:0));
+  var ok=total>=meta;
+  var cor=ok?'var(--green)':'var(--blue)';
+  if(badge){badge.className='badge '+(ok?'badge-ok':'badge-blue');
+    badge.textContent=ok?'meta atingida':Math.round(pct)+'%';}
+
+  // Barra de progresso (acumulado vs meta)
+  var html='<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px">'
+    +'<div><span style="font-size:30px;font-weight:800;font-family:var(--mono);color:'+cor+'">'+total.toFixed(1)+'</span>'
+    +'<span style="font-size:13px;color:var(--muted)"> / '+Math.round(meta)+' h</span></div>'
+    +'<div style="font-size:11px;color:var(--muted)">'+(f.seed_h?'inclui '+f.seed_h+'h semeadas':'')+'</div></div>';
+  html+='<div style="height:9px;background:var(--surface2);border-radius:5px;overflow:hidden">'
+    +'<div style="height:100%;width:'+pct+'%;background:'+cor+';transition:width .4s"></div></div>';
+
+  // Chart de barras: horas de frio por dia (últimos N)
+  var dias=(f.dias||[]).slice(-45);
+  if(dias.length){
+    var W=320,H=104,axis=16;
+    var maxH=Math.max(6,Math.max.apply(null,dias.map(function(x){return x.h;})));
+    var n=dias.length, bw=W/n, gap=n>30?0:0.8;
+    var bars='',diasComFrio=0,melhor=0;
+    dias.forEach(function(x,i){
+      if(x.h>0)diasComFrio++;
+      if(x.h>melhor)melhor=x.h;
+      var bh=maxH>0?(x.h/maxH)*(H-axis):0;
+      var xx=(i*bw+gap).toFixed(1), yy=(H-axis-bh).toFixed(1), w=(bw-gap*2).toFixed(1);
+      var c=x.h>0?'var(--blue)':'var(--border)';
+      bars+='<rect x="'+xx+'" y="'+yy+'" width="'+w+'" height="'+Math.max(0.5,bh).toFixed(1)+'" fill="'+c+'" rx="1"><title>'+x.d+': '+x.h.toFixed(1)+' h</title></rect>';
+    });
+    // linha de base
+    bars+='<line x1="0" y1="'+(H-axis)+'" x2="'+W+'" y2="'+(H-axis)+'" stroke="var(--border)" stroke-width="1"/>';
+    var d0=dias[0].d.slice(8)+'/'+dias[0].d.slice(5,7);
+    var d1=dias[dias.length-1].d.slice(8)+'/'+dias[dias.length-1].d.slice(5,7);
+    html+='<div style="font-size:10px;color:var(--muted);margin-top:12px;display:flex;justify-content:space-between">'
+      +'<span>Frio por dia (h) · pico '+melhor.toFixed(1)+'h · '+diasComFrio+'/'+dias.length+' dias</span><span>máx '+maxH.toFixed(0)+'h</span></div>';
+    html+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;margin-top:4px" preserveAspectRatio="none">'+bars+'</svg>';
+    html+='<div style="font-size:10px;color:var(--muted);display:flex;justify-content:space-between"><span>'+d0+'</span><span>'+d1+'</span></div>';
+  }else{
+    html+='<div style="font-size:12px;color:var(--muted);margin-top:12px">Nenhum dia com frio registrado ainda nesta temporada.</div>';
+  }
+
+  // Controles: semear frio já acumulado + ajustar meta
+  html+='<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">'
+    +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:6px">Ajustes</div>'
+    +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+    +'<input class="sched-input" id="frio-seed" type="number" step="1" min="0" placeholder="frio já acumulado (h)" value="'+(f.seed_h||'')+'" style="flex:1;min-width:120px">'
+    +'<button class="btn-on" onclick="salvarFrioSeed()">Semear</button></div>'
+    +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">'
+    +'<input class="sched-input" id="frio-meta" type="number" step="10" min="1" placeholder="meta (h)" value="'+Math.round(meta)+'" style="flex:1;min-width:120px">'
+    +'<button class="btn-on" onclick="salvarFrioMeta()">Salvar meta</button></div>'
+    +'<div style="font-size:10px;color:var(--muted);margin-top:6px">A estação entrou em campo no meio do inverno — "semear" lança o frio estimado que passou antes do registro começar.</div>'
+    +(f.atualizado?'<div style="font-size:10px;color:var(--muted);margin-top:4px">atualizado '+escapeHtml(f.atualizado)+'</div>':'')
+    +'</div>';
+  el.innerHTML=html;
+}
+
+function salvarFrioSeed(){
+  var v=parseFloat(document.getElementById('frio-seed').value);
+  if(isNaN(v)||v<0){toast('Valor inválido');return;}
+  if(publishFrioCmd({seed_h:v}))toast('❄ Frio semeado: '+v+' h');
+}
+function salvarFrioMeta(){
+  var v=parseFloat(document.getElementById('frio-meta').value);
+  if(isNaN(v)||v<1){toast('Meta inválida');return;}
+  if(publishFrioCmd({meta_h:v}))toast('❄ Meta: '+v+' h');
 }
 
 // MicroPython usa epoch 2000 — converte pra unix quando necessário
