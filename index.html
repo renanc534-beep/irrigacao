@@ -290,6 +290,12 @@ select.cfg-input{cursor:pointer}
       <div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5">A injetora subtrai o volume dosado via sensor de fluxo. Toque em "Reabasteci" depois de trocar o tambor — isso zera o alarme.</div>
     </div>
 
+    <!-- Dosado hoje: volume por bomba (nao somado) -->
+    <div class="card">
+      <div class="card-title">Dosado hoje (por bomba)</div>
+      <div id="dosado-list"><div style="color:var(--muted);font-size:13px">Aguardando dados da injetora...</div></div>
+    </div>
+
     <div class="card"><div class="card-title">Par por setor</div><div id="ferti-setor-config"><div style="color:var(--muted);font-size:13px">Aguardando setores...</div></div></div>
     <!-- v1.7: curva agora eh POR SETOR (antes era por par). Permite mesma
          receita rodar em setores com EC alvo distinto. Add: editar/copiar/colar. -->
@@ -1577,6 +1583,22 @@ function renderFertiStatus(){
     loadFertiCurva();
   }
   renderTambores(d);
+  renderDosado(d);
+}
+
+// Dosado hoje por bomba (mL -> L). Fonte: fertigacao/status.dosado_dia_ml
+function renderDosado(d){
+  var el=document.getElementById('dosado-list');
+  if(!el)return;
+  var dosado=(d&&d.dosado_dia_ml)||{};
+  var bombas=['A1','A2','B1','B2','C1','C2'];
+  el.innerHTML=bombas.map(function(b){
+    var ml=parseFloat(dosado[b]||0);
+    var cor=ml>0?'var(--text)':'var(--muted)';
+    return '<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border)">'
+      +'<span style="color:var(--muted)">Bomba '+b+'</span>'
+      +'<b style="color:'+cor+'">'+(ml/1000).toFixed(2)+' L</b></div>';
+  }).join('');
 }
 
 /* ===================================================================== */
