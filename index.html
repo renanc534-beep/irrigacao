@@ -151,7 +151,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação App Pessoal <span class="version-tag">v1.9.1</span></div>
+    <div class="header-title">🌱 Irrigação App Pessoal <span class="version-tag">v1.9.2</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -297,9 +297,8 @@ select.cfg-input{cursor:pointer}
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
           <span id="calib-lo-st" style="width:22px;text-align:center;font-size:15px">①</span>
-          <input type="number" step="0.01" min="0" id="calib-lo-ec" value="0" placeholder="0" title="Zero: ar ou água destilada" style="flex:1;padding:7px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono)">
-          <span style="color:var(--muted);font-size:12px">mS/cm</span>
-          <button class="btn-on" onclick="capturarCalib('lo')">Capturar</button>
+          <span style="flex:1;font-size:12px;color:var(--muted)">Zero — sonda no ar ou água destilada</span>
+          <button class="btn-on" onclick="capturarZero()">Capturar zero</button>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
           <span id="calib-hi-st" style="width:22px;text-align:center;font-size:15px">②</span>
@@ -1749,6 +1748,12 @@ function capturarCalib(ponto){
   var uscm=Math.round(v*1000); // mS/cm -> µS/cm
   if(publishFerti({cmd:'calibrar_ec',ponto:ponto,ec_uscm:uscm}))
     toast('🧪 Ponto '+(ponto==='lo'?'baixo':'alto')+' capturado');
+}
+// Ponto zero dedicado (à prova de erro): captura ADC com a sonda no ar/água
+// destilada = 0 µS. Sem campo pra digitar — evita o cliente pôr valor errado.
+function capturarZero(){
+  if(publishFerti({cmd:'calibrar_ec',ponto:'lo',ec_uscm:0}))
+    toast('🧪 Zero capturado (ar/destilada)');
 }
 
 // v1.7: curvas vivem em `fertigacao/status` (campo `setores`, ja com
