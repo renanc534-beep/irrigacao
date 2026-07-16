@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f1117">
-<title>Irrigação — Morango v1.9.3</title>
+<title>Irrigação — Morango v1.9.5</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação App Pessoal <span class="version-tag">v1.9.3</span></div>
+    <div class="header-title">🌱 Irrigação App Pessoal <span class="version-tag">v1.9.5</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -280,6 +280,14 @@ select.cfg-input{cursor:pointer}
           <input type="checkbox" id="ferti-global-hab" onchange="toggleFertiGlobal(this.checked)" checked> Injetora habilitada
         </label>
         <span style="font-size:11px;color:var(--muted)">desligue pra irrigar sem dosar adubo</span>
+      </div>
+      <!-- v1.9.5: chave do balancer (equalizacao A/B por fluxo). OFF = roda PWM
+           igual nas 2 bombas do par (isola os sensores de fluxo). -->
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="checkbox" id="balancer-hab" onchange="toggleBalancer(this.checked)"> Balancer (equalização A/B)
+        </label>
+        <span style="font-size:11px;color:var(--muted)">iguala a vazão das 2 bombas do par — precisa dos sensores de fluxo OK</span>
       </div>
     </div>
 
@@ -497,7 +505,7 @@ var cfgSchedules={},cfgEnabled={},cfgExpanded={};
 // fertiCurvas indexada pelo sector_id (string) — ex: {"1":[...], "2":[...]}.
 // fertiSetoresHab = {sid: bool} (ferti habilitada por setor).
 // fertiGlobalHab = bool (toggle global da injetora).
-var fertiCurvas={},fertiSetores={},fertiSetoresHab={},fertiGlobalHab=true;
+var fertiCurvas={},fertiSetores={},fertiSetoresHab={},fertiGlobalHab=true,balancerHab=false;
 // Clipboard interno pra copiar/colar curva entre setores
 var fertiClip=null,fertiClipFrom=null;
 // Edicao inline: idx do intervalo sendo editado no setor atual (null = add normal)
@@ -1610,6 +1618,11 @@ function renderFertiStatus(){
     var gh=document.getElementById('ferti-global-hab');
     if(gh)gh.checked=fertiGlobalHab;
   }
+  if(typeof d.balancer_habilitado!=='undefined'){
+    balancerHab=!!d.balancer_habilitado;
+    var bh=document.getElementById('balancer-hab');
+    if(bh)bh.checked=balancerHab;
+  }
   // Re-render aba se aberta (selects, lista de curva, etc.)
   if(document.getElementById('tab-ferti').style.display!=='none'){
     populateSetorSelect();
@@ -1830,6 +1843,11 @@ function toggleFertiGlobal(on){
   fertiGlobalHab=!!on;
   if(publishFerti({cmd:'set_ferti_global',on:fertiGlobalHab}))
     toast(on?'✅ Injetora habilitada':'⏸ Injetora pausada (irriga sem dosar)');
+}
+function toggleBalancer(on){
+  balancerHab=!!on;
+  if(publishFerti({cmd:'set_equalizacao',on:balancerHab}))
+    toast(on?'✅ Balancer ligado (equaliza A/B)':'⏸ Balancer desligado (PWM igual nas 2 bombas)');
 }
 function toggleFertiSetorHab(on){
   var sid=document.getElementById('ferti-setor-select').value;
