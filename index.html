@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f1117">
-<title>Irrigação — Morango v1.9.6</title>
+<title>Irrigação — Morango v1.9.7</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ select.cfg-input{cursor:pointer}
 
 <div class="header">
   <div>
-    <div class="header-title">🌱 Irrigação App Pessoal <span class="version-tag">v1.9.6</span></div>
+    <div class="header-title">🌱 Irrigação App Pessoal <span class="version-tag">v1.9.7</span></div>
     <div class="header-sub" id="rtc-display">Morango semi-hidropônico</div>
   </div>
   <div class="conn-dot" id="conn-dot"></div>
@@ -291,6 +291,20 @@ select.cfg-input{cursor:pointer}
         <span style="font-size:11px;color:var(--muted)">desmarcado = PWM igual nas 2 bombas (sem sensor). Marcado = acha a proporção 1:1 por vazão.</span>
       </div>
       <div id="balancer-fase" style="margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.5">—</div>
+
+      <!-- Trim manual de PWM por bomba (modo PWM manual, "por fluxo" desmarcado).
+           pwm_bomba = nominal adaptativo do EC + trim fixo. Ajuste quando um
+           tambor baixa diferente do par (bomba que injeta menos). -->
+      <div id="pwm-trim-box" style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">🎛 Trim manual de PWM por bomba (%)</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Somado FIXO ao PWM adaptativo do EC. Ex: bomba injeta menos → +2%. O EC segue ajustando o nominal; a diferença fica fixa. Vale no modo PWM manual (por fluxo desmarcado).</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13px">
+          <div style="display:flex;align-items:center;gap:5px"><b>A</b>1<input id="trim-A1" type="number" step="1" min="-30" max="30" style="width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px">2<input id="trim-A2" type="number" step="1" min="-30" max="30" style="width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px"></div>
+          <div style="display:flex;align-items:center;gap:5px"><b>B</b>1<input id="trim-B1" type="number" step="1" min="-30" max="30" style="width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px">2<input id="trim-B2" type="number" step="1" min="-30" max="30" style="width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px"></div>
+          <div style="display:flex;align-items:center;gap:5px"><b>C</b>1<input id="trim-C1" type="number" step="1" min="-30" max="30" style="width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px">2<input id="trim-C2" type="number" step="1" min="-30" max="30" style="width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px"></div>
+          <button class="btn-on" id="pwm-trim-save" onclick="savePwmTrim()" style="padding:6px 12px;font-size:12px">Salvar trim</button>
+        </div>
+      </div>
     </div>
 
     <!-- Calibração do sensor de EC — wizard 2 pontos (envia calibrar_ec) -->
@@ -1644,6 +1658,14 @@ function renderFertiStatus(){
       bf.innerHTML=linhas.join('<br>');
     }
   }
+  // Trim manual por bomba: preenche inputs (sem sobrescrever o que o usuário digita)
+  var pt=d.pwm_trim||{};
+  ['A1','A2','B1','B2','C1','C2'].forEach(function(b){
+    var el=document.getElementById('trim-'+b);
+    if(el&&document.activeElement!==el)el.value=(pt[b]!==undefined?pt[b]:0);
+  });
+  var ptb=document.getElementById('pwm-trim-box');
+  if(ptb)ptb.style.opacity=balancerHab?'0.4':'1';
   // Re-render aba se aberta (selects, lista de curva, etc.)
   if(document.getElementById('tab-ferti').style.display!=='none'){
     populateSetorSelect();
@@ -1868,7 +1890,15 @@ function toggleFertiGlobal(on){
 function toggleBalancer(on){
   balancerHab=!!on;
   if(publishFerti({cmd:'set_equalizacao',on:balancerHab}))
-    toast(on?'✅ Ferti por FLUXO (equaliza A/B)':'⏸ Ferti por PWM igual (2 bombas iguais)');
+    toast(on?'✅ Ferti por FLUXO (equaliza A/B)':'⏸ Ferti por PWM manual (nominal igual + trim)');
+}
+function savePwmTrim(){
+  var trim={};
+  ['A1','A2','B1','B2','C1','C2'].forEach(function(b){
+    var el=document.getElementById('trim-'+b);
+    if(el){var v=parseInt(el.value,10);trim[b]=isNaN(v)?0:Math.max(-30,Math.min(30,v));}
+  });
+  if(publishFerti({cmd:'set_pwm_trim',trim:trim}))toast('🎛 Trim de PWM salvo');
 }
 function toggleFertiSetorHab(on){
   var sid=document.getElementById('ferti-setor-select').value;
