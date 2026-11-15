@@ -185,6 +185,7 @@ select.cfg-input{cursor:pointer}
   <button class="tab active" onclick="showTab('status',this)">Status</button>
   <button class="tab" onclick="showTab('manual',this)">Manual</button>
   <button class="tab" onclick="showTab('config',this)">Configurar</button>
+  <button class="tab" onclick="showTab('presets',this)">Presets</button>
   <button class="tab" id="tab-btn-sensores" onclick="showTab('sensores',this)">Sensores</button>
   <button class="tab" onclick="showTab('historico',this)">Histórico</button>
   <button class="tab" onclick="showTab('ferti',this)">Ferti</button>
@@ -241,6 +242,23 @@ select.cfg-input{cursor:pointer}
     <div id="cfg-sectors-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aguardando setores...</div></div>
     <button class="save-btn" style="margin-top:8px" onclick="openCopyModal()">📋 Copiar configurações</button>
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5">Toque no setor para expandir e editar<br>Toggle liga/desliga a programação imediatamente</div>
+  </div>
+
+  <!-- v2.1: aba Presets — tempos + ferti pré-configurados por cenário (ex: chuva).
+       Aplica em lote nos setores marcados (set_sector + salvar_curva). -->
+  <div id="tab-presets" style="display:none">
+    <div class="card">
+      <div class="card-title">Presets</div>
+      <div id="pre-list"><div style="color:var(--muted);font-size:13px">Nenhum preset ainda</div></div>
+      <button class="save-btn" style="margin-top:4px" onclick="openPresetEditor(null)">+ Novo preset</button>
+    </div>
+    <div class="card">
+      <div class="card-title">↩ Backups (config antes de aplicar)</div>
+      <div id="pre-backups"><div style="color:var(--muted);font-size:13px">Nenhum backup ainda</div></div>
+    </div>
+    <div class="info-box">
+      <strong>Como funciona.</strong> Monte um preset (ex: "Chuva": menos pulsos e EC mais alta) e aplique nos setores que quiser. Antes de aplicar, o app guarda a config atual desses setores em <b>Backups</b> — pra voltar ao normal é só tocar em ↩ Restaurar. O preset fica valendo até você aplicar outro ou restaurar.
+    </div>
   </div>
 
   <!-- aba Sensores — estação meteo + nós de substrato (umidade + EC). Fase 1: só observação -->
@@ -554,6 +572,77 @@ select.cfg-input{cursor:pointer}
   </div>
 </div>
 
+<!-- v2.1: Modal editor de preset -->
+<div class="modal-overlay" id="pre-modal">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div class="modal-title" id="pre-modal-title">Novo preset</div>
+      <button class="modal-close" onclick="closePresetEditor()">×</button>
+    </div>
+    <label class="cfg-label">Nome</label>
+    <input class="cfg-input" id="pre-nome" placeholder="Ex: Chuva" maxlength="30">
+    <label class="cfg-label">Puxar config de um setor (opcional)</label>
+    <div style="display:flex;gap:8px">
+      <select class="cfg-input" id="pre-from" style="flex:1"></select>
+      <button class="btn-add" onclick="presetFromSetor()">Puxar</button>
+    </div>
+
+    <label class="cfg-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:16px">
+      <input type="checkbox" id="pre-usa-tempo" onchange="renderPresetEditor()"> Alterar tempo e horários
+    </label>
+    <div id="pre-tempo-box">
+      <div style="display:flex;gap:8px">
+        <div style="flex:1"><input class="cfg-input" id="pre-dmin" type="number" min="0" max="120" style="text-align:center"><div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">minutos</div></div>
+        <div style="flex:1"><input class="cfg-input" id="pre-dsec" type="number" min="0" max="59" style="text-align:center"><div style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px">segundos</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px">Horários dos pulsos (cada horário = 1 pulso)</div>
+      <div class="sched-tags" id="pre-tags"></div>
+      <div style="display:flex;gap:8px"><input class="sched-input" id="pre-newhora" type="text" placeholder="HH:MM" style="width:100px"><button class="btn-add" onclick="presetAddHora()">+ Adicionar</button></div>
+    </div>
+
+    <label class="cfg-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:16px">
+      <input type="checkbox" id="pre-usa-curva" onchange="renderPresetEditor()"> Alterar curva de EC
+    </label>
+    <div id="pre-curva-box">
+      <div id="pre-curva-list"></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">
+        <input class="sched-input" id="pre-c-ini" type="text" placeholder="HH:MM" style="width:78px">
+        <span style="color:var(--muted)">→</span>
+        <input class="sched-input" id="pre-c-fim" type="text" placeholder="HH:MM" style="width:78px">
+        <input class="sched-input" id="pre-c-ec" type="number" step="0.01" min="0" max="10" placeholder="EC" style="width:72px">
+        <button class="btn-add" onclick="presetAddCurva()">+ Add</button>
+      </div>
+    </div>
+
+    <label class="cfg-label" style="margin-top:16px">Ferti no setor</label>
+    <select class="cfg-input" id="pre-fhab">
+      <option value="">Não mudar</option>
+      <option value="1">Ligada (dosa adubo)</option>
+      <option value="0">Desligada (só água)</option>
+    </select>
+
+    <button class="save-btn" style="margin-top:16px" onclick="savePresetEditor()">Salvar preset</button>
+  </div>
+</div>
+
+<!-- v2.1: Modal aplicar preset — grade de setores (igual multi-zonas) -->
+<div class="modal-overlay" id="pre-apply-modal">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div class="modal-title" id="pre-apply-title">Aplicar preset</div>
+      <button class="modal-close" onclick="closePresetApply()">×</button>
+    </div>
+    <div id="pre-apply-resumo" style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:12px"></div>
+    <div class="modal-step-label" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Setores que vão receber</span>
+      <button class="btn-add" style="padding:4px 10px" onclick="presetApplyTodos()">Todos</button>
+    </div>
+    <div class="sec-grid" id="pre-apply-grid"></div>
+    <button class="save-btn" onclick="executePresetApply()">✔ Aplicar nos setores</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">A config atual desses setores vai pros Backups antes de aplicar.<br>Nome e liga/desliga de cada setor são mantidos.</div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -661,10 +750,11 @@ function aplicaRecursos(cfg){
 }
 
 function showTab(name,el){
-  ['status','manual','config','sensores','historico','rtc','ferti','wifi','conn'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'':'none';});
+  ['status','manual','config','presets','sensores','historico','rtc','ferti','wifi','conn'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===name?'':'none';});
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
   if(el)el.classList.add('active');
   if(name==='config')renderConfigSectors();
+  if(name==='presets')renderPresets();
   if(name==='manual')renderManualSectors();
   if(name==='historico'){renderHistory();renderGraficos();}
   if(name==='sensores'){renderSubstratos();renderEstacao();}
@@ -715,6 +805,7 @@ function connect(){
     client.subscribe('fertigacao/config');  // setores+curvas (retido) — recarrega curva no browser limpo
     client.subscribe('fertigacao/memoria'); // memoria EC aprendida (gestao/apagar)
     client.subscribe('fertigacao/horimetro'); // horas de manutencao por bomba (servico do Pi)
+    client.subscribe(PRE_TOPIC); // v2.1: presets (retido, compartilhado entre celulares)
     toast('✅ Conectado!');
     // v1.5: retoma sequência multi-zonas interrompida por reload/crash
     if(!mzResumed){mzResumed=true;mzResume();}
@@ -745,6 +836,7 @@ function connect(){
       else if(t==='fertigacao/config')onFertiConfig(d); // setores+curvas (retido)
       else if(t==='fertigacao/memoria')onFertiMem(d); // memoria EC aprendida
       else if(t==='fertigacao/horimetro')onHorimetro(d); // horas por bomba (Pi)
+      else if(t===PRE_TOPIC)onPresets(d); // v2.1
     }catch(e){}
   });
 }
@@ -1573,6 +1665,315 @@ function executeCopy(){
 }
 
 /* ===================================================================== */
+/*  v2.1 — Aba PRESETS: tempos + ferti pré-configurados por cenário       */
+/* ===================================================================== */
+// Ex: "Chuva" = menos pulsos e EC mais alta. Aplica em lote nos setores
+// marcados reusando set_sector (controlador) + salvar_curva /
+// set_ferti_setor_habilita (injetora) — sem mudança de firmware.
+// Guardados no tópico RETIDO webapp/presets: todos os celulares do kit veem
+// os mesmos (ACL do webapp já libera webapp/#). localStorage = só cache.
+// Antes de aplicar, guarda em backups SÓ o que o preset muda em cada setor.
+var PRE_TOPIC='webapp/presets',PRE_CACHE='presets_cache',PRE_MAX_BACKUPS=5;
+var presetsData={presets:[],backups:[],ativos:{}};
+try{var _pc=JSON.parse(localStorage.getItem(PRE_CACHE)||'null');if(_pc)presetsData=_preNorm(_pc);}catch(e){}
+var preEdit=null;           // preset em edição no modal (cópia de trabalho)
+var preApplyId=null,preApplySel={};
+var preQ=[],preQTimer=null; // fila de comandos espaçados
+var fertiCfgRx=false;       // já veio setores/curvas da injetora (curva atual conhecida)
+
+function _preNorm(d){
+  var idOk=function(x){return x&&/^[a-z0-9]+$/.test(String(x.id));};
+  return {
+    presets:Array.isArray(d.presets)?d.presets.filter(idOk):[],
+    backups:Array.isArray(d.backups)?d.backups.filter(idOk):[],
+    ativos:(d.ativos&&typeof d.ativos==='object')?d.ativos:{}
+  };
+}
+function onPresets(d){
+  if(!d||!Array.isArray(d.presets))return;
+  presetsData=_preNorm(d);
+  try{localStorage.setItem(PRE_CACHE,JSON.stringify(presetsData));}catch(e){}
+  if(document.getElementById('tab-presets').style.display!=='none')renderPresets();
+}
+// Muta uma cópia e só efetiva se conseguir publicar (retido).
+function commitPresets(mut){
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return false;}
+  var d=JSON.parse(JSON.stringify(presetsData));
+  mut(d);
+  presetsData=d;
+  client.publish(PRE_TOPIC,JSON.stringify(d),{qos:1,retain:true});
+  try{localStorage.setItem(PRE_CACHE,JSON.stringify(d));}catch(e){}
+  renderPresets();
+  return true;
+}
+function _preHoraOk(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(v);}
+function _preSec(sid){return (state.sectors||[]).find(function(s){return s.id===sid;});}
+function _preCurva(c){return (c||[]).map(function(it){return {inicio:it.inicio||it.hora_inicio||'00:00',fim:it.fim||it.hora_fim||'00:00',ec:parseFloat(it.ec)||0};});}
+function _preSids(obj){return Object.keys(obj).map(Number).sort(function(a,b){return a-b;});}
+
+function preResumo(p){
+  var parts=[];
+  if(p.tempo){
+    var n=p.tempo.schedules.length;
+    parts.push(p.tempo.dmin+'min'+(p.tempo.dsec>0?' '+p.tempo.dsec+'s':'')+' · '+n+(n===1?' pulso':' pulsos'));
+  }
+  if(p.curva){
+    var ecs=p.curva.map(function(c){return parseFloat(c.ec)||0;});
+    var lo=Math.min.apply(null,ecs),hi=Math.max.apply(null,ecs);
+    parts.push(ecs.length?'EC '+lo.toFixed(2)+(hi!==lo?'–'+hi.toFixed(2):''):'curva EC vazia');
+  }
+  if(p.ferti_hab===true)parts.push('ferti ligada');
+  if(p.ferti_hab===false)parts.push('ferti desligada');
+  return parts.join(' · ')||'—';
+}
+
+function renderPresets(){
+  var el=document.getElementById('pre-list');if(!el)return;
+  var at=presetsData.ativos;
+  el.innerHTML=presetsData.presets.length?presetsData.presets.map(function(p){
+    var uso=_preSids(at).filter(function(sid){return at[sid]===p.id;});
+    return '<div class="cfg-card"><div class="cfg-head" style="cursor:default">'
+      +'<div class="cfg-head-info"><div class="cfg-head-name">'+escapeHtml(p.nome)+'</div>'
+      +'<div class="cfg-head-meta">'+escapeHtml(preResumo(p))+'</div>'
+      +(uso.length?'<div class="cfg-head-meta" style="color:var(--green)">Aplicado em: S'+uso.join(', S')+'</div>':'')
+      +'</div>'
+      +'<button class="btn-on" onclick="openPresetApply(\''+p.id+'\')">▶ Aplicar</button>'
+      +'<button class="btn-add" style="padding:7px 10px" onclick="openPresetEditor(\''+p.id+'\')">✏</button>'
+      +'<button class="btn-off" style="padding:7px 10px" onclick="deletePreset(\''+p.id+'\')">×</button>'
+      +'</div></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px;margin-bottom:10px">Nenhum preset ainda — crie o primeiro (ex: "Chuva").</div>';
+  var bl=document.getElementById('pre-backups');
+  bl.innerHTML=presetsData.backups.length?presetsData.backups.map(function(b){
+    return '<div class="cfg-card"><div class="cfg-head" style="cursor:default">'
+      +'<div class="cfg-head-info"><div class="cfg-head-name">Antes de "'+escapeHtml(b.nome)+'"</div>'
+      +'<div class="cfg-head-meta">'+escapeHtml(b.quando)+' · S'+_preSids(b.snap||{}).join(', S')+'</div></div>'
+      +'<button class="btn-on" onclick="restoreBackup(\''+b.id+'\')">↩ Restaurar</button>'
+      +'<button class="btn-off" style="padding:7px 10px" onclick="deleteBackup(\''+b.id+'\')">×</button>'
+      +'</div></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px">Nenhum backup ainda</div>';
+}
+
+/* ----- Editor (modal) ----- */
+
+function openPresetEditor(id){
+  var p=id&&presetsData.presets.find(function(x){return x.id===id;});
+  preEdit=p?JSON.parse(JSON.stringify(p)):{id:null,nome:'',tempo:null,curva:null,ferti_hab:null};
+  document.getElementById('pre-modal-title').textContent=p?'Editar preset':'Novo preset';
+  document.getElementById('pre-nome').value=preEdit.nome;
+  document.getElementById('pre-usa-tempo').checked=!!preEdit.tempo;
+  document.getElementById('pre-usa-curva').checked=!!preEdit.curva;
+  // buffers de trabalho: só entram no preset se a caixa estiver marcada
+  if(!preEdit.tempo)preEdit.tempo={dmin:5,dsec:0,schedules:[]};
+  if(!preEdit.curva)preEdit.curva=[];
+  document.getElementById('pre-dmin').value=preEdit.tempo.dmin;
+  document.getElementById('pre-dsec').value=preEdit.tempo.dsec;
+  document.getElementById('pre-fhab').value=preEdit.ferti_hab===true?'1':(preEdit.ferti_hab===false?'0':'');
+  document.getElementById('pre-from').innerHTML=(state.sectors||[]).map(function(s){
+    return '<option value="'+s.id+'">'+escapeHtml(s.name||'Setor '+s.id)+'</option>';
+  }).join('')||'<option value="">— aguardando setores —</option>';
+  renderPresetEditor();
+  document.getElementById('pre-modal').classList.add('show');
+}
+
+function closePresetEditor(){document.getElementById('pre-modal').classList.remove('show');preEdit=null;}
+
+function renderPresetEditor(){
+  if(!preEdit)return;
+  document.getElementById('pre-tempo-box').style.display=document.getElementById('pre-usa-tempo').checked?'':'none';
+  document.getElementById('pre-curva-box').style.display=document.getElementById('pre-usa-curva').checked?'':'none';
+  document.getElementById('pre-tags').innerHTML=preEdit.tempo.schedules.map(function(t){
+    return '<div class="sched-tag">'+t+'<span class="sched-tag-x" onclick="presetRemoveHora(\''+t+'\')">×</span></div>';
+  }).join('')||'<span style="font-size:11px;color:var(--muted)">Sem horários = o setor não irriga</span>';
+  document.getElementById('pre-curva-list').innerHTML=preEdit.curva.length?preEdit.curva.map(function(c,i){
+    return '<div class="ec-interval"><span class="ec-time">'+escapeHtml(c.inicio)+'</span><span class="ec-arrow">→</span><span class="ec-time">'+escapeHtml(c.fim)+'</span>'
+      +'<span class="ec-val">EC '+(parseFloat(c.ec)||0).toFixed(2)+' mS/cm</span>'
+      +'<button class="btn-off" style="padding:4px 10px;font-size:12px" onclick="presetRemoveCurva('+i+')">×</button></div>';
+  }).join(''):'<div style="font-size:12px;color:var(--muted);margin:6px 0">Nenhum intervalo configurado</div>';
+}
+
+function presetAddHora(){
+  var inp=document.getElementById('pre-newhora'),v=inp.value.trim();
+  if(!_preHoraOk(v)){toast('Formato inválido! Use HH:MM');return;}
+  if(preEdit.tempo.schedules.indexOf(v)===-1){preEdit.tempo.schedules.push(v);preEdit.tempo.schedules.sort();}
+  inp.value='';
+  renderPresetEditor();
+}
+function presetRemoveHora(t){
+  preEdit.tempo.schedules=preEdit.tempo.schedules.filter(function(x){return x!==t;});
+  renderPresetEditor();
+}
+
+function presetAddCurva(){
+  var ini=document.getElementById('pre-c-ini').value.trim(),fim=document.getElementById('pre-c-fim').value.trim();
+  var ec=parseFloat(document.getElementById('pre-c-ec').value);
+  if(!_preHoraOk(ini)||!_preHoraOk(fim)){toast('Use HH:MM nas duas horas!');return;}
+  if(ini>=fim){toast('Hora fim deve ser maior que início!');return;}
+  if(isNaN(ec)||ec<0||ec>10){toast('EC inválido (0-10)!');return;}
+  if(preEdit.curva.some(function(c){return !(fim<=c.inicio||ini>=c.fim);})){toast('⚠ Esse horário se sobrepõe a outro intervalo!');return;}
+  preEdit.curva.push({inicio:ini,fim:fim,ec:ec});
+  preEdit.curva.sort(function(a,b){return a.inicio.localeCompare(b.inicio);});
+  ['pre-c-ini','pre-c-fim','pre-c-ec'].forEach(function(k){document.getElementById(k).value='';});
+  renderPresetEditor();
+}
+function presetRemoveCurva(i){preEdit.curva.splice(i,1);renderPresetEditor();}
+
+// Preenche o editor com tempo/horários (e curva, se conhecida) de um setor real
+function presetFromSetor(){
+  var sid=parseInt(document.getElementById('pre-from').value),sec=_preSec(sid);
+  if(!sec){toast('Aguardando setores do controlador...');return;}
+  document.getElementById('pre-dmin').value=sec.duration_min!==undefined?sec.duration_min:(sec.duration||15);
+  document.getElementById('pre-dsec').value=sec.duration_sec||0;
+  preEdit.tempo.schedules=(sec.schedules||[]).slice();
+  document.getElementById('pre-usa-tempo').checked=true;
+  if(fertiCfgRx&&fertiCurvas[sid]){
+    preEdit.curva=_preCurva(fertiCurvas[sid]);
+    document.getElementById('pre-usa-curva').checked=true;
+  }
+  renderPresetEditor();
+  toast('Config do setor '+sid+' puxada — ajuste e salve');
+}
+
+function savePresetEditor(){
+  var nome=document.getElementById('pre-nome').value.trim();
+  if(!nome){toast('Dê um nome ao preset');return;}
+  var fh=document.getElementById('pre-fhab').value;
+  var p={id:preEdit.id||Date.now().toString(36),nome:nome,tempo:null,curva:null,ferti_hab:fh===''?null:fh==='1'};
+  if(document.getElementById('pre-usa-tempo').checked){
+    var dmin=parseInt(document.getElementById('pre-dmin').value)||0,dsec=parseInt(document.getElementById('pre-dsec').value)||0;
+    if(dmin<0||dmin>120||dsec<0||dsec>59){toast('Duração inválida (0-120 min, 0-59 s)');return;}
+    if(dmin===0&&dsec===0&&preEdit.tempo.schedules.length){toast('Duração zerada com horários — confira');return;}
+    p.tempo={dmin:dmin,dsec:dsec,schedules:preEdit.tempo.schedules.slice()};
+  }
+  if(document.getElementById('pre-usa-curva').checked)p.curva=preEdit.curva.slice();
+  if(!p.tempo&&!p.curva&&p.ferti_hab===null){toast('O preset não muda nada — marque tempo, curva ou ferti');return;}
+  if(commitPresets(function(d){
+    var i=d.presets.findIndex(function(x){return x.id===p.id;});
+    if(i>=0)d.presets[i]=p;else d.presets.push(p);
+  })){
+    toast('✅ Preset "'+nome+'" salvo');
+    closePresetEditor();
+  }
+}
+
+function deletePreset(id){
+  var p=presetsData.presets.find(function(x){return x.id===id;});if(!p)return;
+  if(!confirm('Apagar o preset "'+p.nome+'"?'))return;
+  commitPresets(function(d){
+    d.presets=d.presets.filter(function(x){return x.id!==id;});
+    for(var k in d.ativos)if(d.ativos[k]===id)delete d.ativos[k];
+  });
+}
+
+/* ----- Aplicar (modal com grade de setores) ----- */
+
+function openPresetApply(id){
+  var p=presetsData.presets.find(function(x){return x.id===id;});if(!p)return;
+  var sectors=state.sectors||[];
+  if(!sectors.length){toast('Aguardando setores do controlador...');return;}
+  preApplyId=id;preApplySel={};
+  document.getElementById('pre-apply-title').textContent='Aplicar "'+p.nome+'"';
+  document.getElementById('pre-apply-resumo').textContent=preResumo(p);
+  document.getElementById('pre-apply-grid').innerHTML=sectors.map(function(s){
+    return '<div class="sec-cell" data-sid="'+s.id+'" onclick="presetApplyToggle('+s.id+')">'+s.id+'</div>';
+  }).join('');
+  document.getElementById('pre-apply-modal').classList.add('show');
+}
+function closePresetApply(){document.getElementById('pre-apply-modal').classList.remove('show');}
+function _preCell(sid,on){var c=document.querySelector('#pre-apply-grid .sec-cell[data-sid="'+sid+'"]');if(c)c.classList.toggle('on',on);}
+function presetApplyToggle(sid){preApplySel[sid]=!preApplySel[sid];_preCell(sid,preApplySel[sid]);}
+function presetApplyTodos(){
+  var sectors=state.sectors||[];
+  var todos=sectors.every(function(s){return preApplySel[s.id];});
+  sectors.forEach(function(s){preApplySel[s.id]=!todos;_preCell(s.id,!todos);});
+}
+
+// Fila: 1 comando a cada 400ms. Cada set_sector/salvar_curva grava flash no
+// ESP — rajada de dezenas de comandos de uma vez pesa no umqtt/heap.
+function preEnqueue(fn){preQ.push(fn);if(!preQTimer)preRun();}
+function preRun(){
+  var fn=preQ.shift();
+  if(!fn){preQTimer=null;return;}
+  fn();
+  preQTimer=setTimeout(preRun,400);
+}
+
+// Envia pra 1 setor só as partes presentes em cfg ({tempo,curva,ferti_hab}).
+// Serve pro preset e pro snapshot do backup (mesmo formato).
+function preSendSetor(sid,cfg){
+  if(cfg.tempo)preEnqueue(function(){
+    var sec=_preSec(sid)||{}; // nome/enabled/modo lidos na hora do envio
+    if(publish({cmd:'set_sector',sector:sid,name:sec.name||('Setor '+sid),duration_min:cfg.tempo.dmin,duration_sec:cfg.tempo.dsec,enabled:sec.enabled!==false,schedules:cfg.tempo.schedules,modo:sec.modo||'horario'}))
+      expectAck(sid);
+  });
+  if(cfg.curva)preEnqueue(function(){
+    var curva=cfg.curva.map(function(c){return {hora_inicio:c.inicio,hora_fim:c.fim,ec:parseFloat(c.ec)||0};});
+    publishFerti({cmd:'salvar_curva',setor:sid,curva:curva});
+  });
+  if(cfg.ferti_hab===true||cfg.ferti_hab===false)preEnqueue(function(){
+    publishFerti({cmd:'set_ferti_setor_habilita',setor:sid,on:cfg.ferti_hab});
+  });
+}
+
+// Estado atual do setor, só das partes que o preset vai mexer
+function preSnapshot(sid,p){
+  var sec=_preSec(sid)||{},s={ativo:presetsData.ativos[sid]||null};
+  if(p.tempo)s.tempo={dmin:sec.duration_min!==undefined?sec.duration_min:(sec.duration||15),dsec:sec.duration_sec||0,schedules:(sec.schedules||[]).slice()};
+  if(p.curva)s.curva=_preCurva(fertiCurvas[sid]);
+  if(p.ferti_hab===true||p.ferti_hab===false)s.ferti_hab=fertiSetoresHab[sid]!==false;
+  return s;
+}
+
+// Checa conexão/devices antes de mandar uma leva; true = pode enviar
+function _preDevicesOk(temTempo,temFerti){
+  if(!client||!client.connected){toast('⚠ Sem conexão!');return false;}
+  if(temTempo&&espOnline==='0'){toast('⚠ Controlador OFFLINE — nada enviado');return false;}
+  if(temFerti&&fertiOnline==='0'){toast('⚠ Injetora OFFLINE — nada enviado');return false;}
+  if(preQTimer){toast('Aguarde: ainda enviando comandos anteriores');return false;}
+  return true;
+}
+
+function executePresetApply(){
+  var p=presetsData.presets.find(function(x){return x.id===preApplyId;});if(!p)return;
+  var sids=_preSids(preApplySel).filter(function(sid){return preApplySel[sid];});
+  if(!sids.length){toast('Selecione ao menos 1 setor!');return;}
+  var temFerti=!!p.curva||p.ferti_hab===true||p.ferti_hab===false;
+  if(!_preDevicesOk(!!p.tempo,temFerti))return;
+  // sem a config da injetora a curva atual é desconhecida — backup sairia vazio
+  if(temFerti&&!fertiCfgRx){toast('Aguardando config da injetora — tente em alguns segundos');return;}
+  var snap={};
+  sids.forEach(function(sid){snap[sid]=preSnapshot(sid,p);});
+  var quando=new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  if(!commitPresets(function(d){
+    d.backups.unshift({id:Date.now().toString(36),nome:p.nome,quando:quando,snap:snap});
+    d.backups=d.backups.slice(0,PRE_MAX_BACKUPS);
+    sids.forEach(function(sid){d.ativos[sid]=p.id;});
+  }))return;
+  sids.forEach(function(sid){preSendSetor(sid,p);});
+  preEnqueue(function(){toast('✅ "'+p.nome+'" enviado para '+sids.length+' setor(es)');});
+  closePresetApply();
+}
+
+function restoreBackup(id){
+  var b=presetsData.backups.find(function(x){return x.id===id;});if(!b)return;
+  var sids=_preSids(b.snap||{});
+  var temTempo=sids.some(function(s){return b.snap[s].tempo;});
+  var temFerti=sids.some(function(s){return b.snap[s].curva||b.snap[s].ferti_hab!==undefined;});
+  if(!_preDevicesOk(temTempo,temFerti))return;
+  if(!confirm('Restaurar a config de antes de "'+b.nome+'" ('+b.quando+') nos setores S'+sids.join(', S')+'?'))return;
+  // backup é mantido (apagar no ×) — se algum comando falhar dá pra repetir
+  if(!commitPresets(function(d){
+    sids.forEach(function(sid){var a=b.snap[sid].ativo;if(a)d.ativos[sid]=a;else delete d.ativos[sid];});
+  }))return;
+  sids.forEach(function(sid){preSendSetor(sid,b.snap[sid]);});
+  preEnqueue(function(){toast('↩ Config restaurada em '+sids.length+' setor(es)');});
+}
+
+function deleteBackup(id){
+  if(!confirm('Apagar este backup? Não dá pra desfazer.'))return;
+  commitPresets(function(d){d.backups=d.backups.filter(function(x){return x.id!==id;});});
+}
+
+/* ===================================================================== */
 /*  Aba RTC                                                                */
 /* ===================================================================== */
 
@@ -1775,6 +2176,7 @@ function onFertiStatus(data){
 //    (o firmware tirou setores do status de 5s por heap). ────────────────
 function onFertiConfig(d){
   if(d&&Array.isArray(d.setores)){
+    fertiCfgRx=true; // v2.1: curva atual conhecida (backup de preset)
     d.setores.forEach(function(s){
       var sid=String(s.id);
       ensureSetor(s.id);
@@ -1915,6 +2317,7 @@ function renderFertiStatus(){
   // v1.7: status traz `setores` com curva+ferti_habilitada embutidas e
   // `ferti_habilitada` global. Fonte de verdade — sobrescreve cache local.
   if(Array.isArray(d.setores)){
+    fertiCfgRx=true;
     d.setores.forEach(function(s){
       var sid=String(s.id);
       ensureSetor(s.id);
@@ -2266,7 +2669,7 @@ function toggleLayoutEdit(){
   var b=document.getElementById('btn-layout');if(b)b.classList.toggle('on',layoutEdit);
   var tools=document.getElementById('layout-tools');if(tools)tools.style.display=layoutEdit?'':'none';
   // aplica/limpa as barras em TODAS as abas (evita barra orfã ao trocar de aba)
-  ['status','manual','config','sensores','historico','rtc','ferti','wifi','conn'].forEach(renderEditBars);
+  ['status','manual','config','presets','sensores','historico','rtc','ferti','wifi','conn'].forEach(renderEditBars);
   toast(layoutEdit?'Organizar: ▲▼ pra mover os cards':'✅ Layout salvo');
 }
 function resetLayout(){
